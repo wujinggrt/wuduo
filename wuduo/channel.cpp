@@ -1,0 +1,70 @@
+#include <thread>
+#include <iostream>
+
+#include <sys/epoll.h>
+
+#include "channel.h"
+#include "event_loop.h"
+
+namespace wuduo {
+
+Channel::Channel(EventLoop* loop, int fd)
+  : loop_{loop}, 
+  fd_{fd}, 
+  events_{0},
+  revents_{0},
+  in_interest_list{false} {}
+
+Channel::~Channel() {}
+
+void Channel::handle_events() {
+  loop_->assert_in_loop_thread();
+  if ((revents_ & EPOLLHUP) && !(revents_ & EPOLLIN)) {
+    std::cerr << "Channel::handle_events() EPOLLHUP\n";
+  }
+  if (revents_ & EPOLLERR) {
+    if (error_callback_) {
+      error_callback_();
+    }
+  }
+  if (revents_ & (EPOLLIN | EPOLLPRI | EPOLLRDHUP)) {
+    if (read_callback_) {
+      std::cerr << "calling read\n";
+      read_callback_();
+    } else {
+      std::cerr << "no calling read\n";
+    }
+  }
+  if (revents_ & EPOLLOUT) {
+    if (write_callback_) {
+      write_callback_();
+    }
+  }
+}
+
+void Channel::enable_reading() {
+  events_ |= EPOLLIN | EPOLLPRI;
+  update();
+}
+
+void Channel::enable_writing() {
+  events_ |= EPOLLOUT;
+  update();
+}
+
+void Channel::disable_reading() {
+  events_ &= ~EPOLLIN;
+  update();
+}
+
+void Channel::disable_writing() {
+  events_ &= ~EPOLLOUT;
+  update();
+}
+
+void Channel::update() {
+  loop_->update_channel(this);
+  in_interest_list = true;
+}
+
+}

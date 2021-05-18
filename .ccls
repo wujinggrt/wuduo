@@ -1,0 +1,7 @@
+clang
+%c -std=c11
+%cpp -std=c++2a
+%h %hpp --include=Global.h
+%h -x c++-header
+-Iinc
+-I./wuduo
