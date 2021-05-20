@@ -29,10 +29,7 @@ void Channel::handle_events() {
   }
   if (revents_ & (EPOLLIN | EPOLLPRI | EPOLLRDHUP)) {
     if (read_callback_) {
-      std::cerr << "calling read\n";
       read_callback_();
-    } else {
-      std::cerr << "no calling read\n";
     }
   }
   if (revents_ & EPOLLOUT) {

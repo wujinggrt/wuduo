@@ -14,37 +14,46 @@ TEST(TimerQueueTest, SingleThreadTest) {
   g_el = &el;
 
   g_el->run_after([g_el] {
-      std::cout << "Run after " << 1 << '\n';
+      std::printf("Run after 5000us\n");
       std::cout << "Asking el to quit\n";
       g_el->quit();
-      }, wuduo::Seconds{1});
+      }, wuduo::Microseconds{5000});
+
+  g_el->run_at([] {
+      std::printf("Run after 1000us\n");
+      std::printf("Hello loop\n");
+  }, wuduo::Clock::now() + wuduo::Microseconds{1000});
   el.loop();
 }
 
 TEST(TimerQueueTest, ConcurrencyTest) {
-
   wuduo::EventLoop* g_el;
   wuduo::EventLoop el;
   g_el = &el;
-#if 0
-  std::thread t1{[&g_el] {
-    wuduo::EventLoop el;
-    g_el = &el;
- 4j   std::cout << "thread1 started\n";
-    el.loop();
-  }};
-#endif
-#if 0
-  for (int i = 0; i < 1; i++) {
-    std::thread t1{[&] {
-      g_el->run_in_loop([] {
-          std::cout << "Run in other thr\n";
-          });
+  std::vector<std::thread> threads;
+  for (int i = 0; i < 5; i++) {
+    std::thread t1{[i, g_el] {
+      g_el->run_in_loop([i] {
+          std::printf("Threads %d running\n", i);
+        });
+      // since threads runs concurrency, we can not determine that the i-th thread runs in the i-th order.
+      // maybe in a order [0, 2, 3, 4, 1];
       g_el->run_after([i] {
-          std::cout << "Run after " << i << '\n';
-          }, wuduo::Seconds{i});
+          std::printf("Run after 50 + %d * 50\n", i);
+          }, wuduo::Microseconds{50 + i * 50});
     }};
-    t1.detach();
+    threads.push_back(std::move(t1));
   }
-#endif
+
+  // quit after 5s
+  el.run_after([g_el] {
+      std::printf("Quiting loop\n");
+      g_el->quit();
+  }, wuduo::Seconds{4});
+
+  el.loop();
+
+  for (auto& t : threads) {
+    t.join();
+  }
 }

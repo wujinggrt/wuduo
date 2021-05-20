@@ -100,7 +100,7 @@ void EventLoop::wakeup() {
 }
 
  std::shared_ptr<Timer> EventLoop::run_at(std::function<void()> callback, Timestamp when) {
-   return timer_queue_.add_timer(std::move(callback), when, Microseconds{0});
+   return timer_queue_.add_timer(std::move(callback), when, Microseconds::zero());
 }
 
 std::shared_ptr<Timer> EventLoop::run_after(std::function<void()> callback, Microseconds delay) {

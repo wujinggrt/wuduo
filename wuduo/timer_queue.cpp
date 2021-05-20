@@ -35,25 +35,18 @@ TimerQueue::~TimerQueue() {
 }
 
 std::shared_ptr<Timer> TimerQueue::add_timer(TimerCallback cb, Timestamp when, Microseconds interval) {
-  std::cerr << "Adding timer\n";
   auto timer = std::make_shared<Timer>(std::move(cb), when, interval);
-  loop_->run_in_loop([&] {
-#if 1
-      std::cerr << "Adding timer, run_in_loop\n";
+  loop_->run_in_loop([this, when, timer] {
       if (timers_.empty() || when < timers_.begin()->first) {
         reset_alarm(when);
       }
-      std::cerr << "Adding timer, reseted\n";
       timers_.emplace(when, timer);
-      std::cerr << "timers_ emplaced\n";
-#endif
   });
   return timer;
 }
 
 void TimerQueue::handle_read() {
   loop_->assert_in_loop_thread();
-  std::cerr << "Handling read in timer queue\n";
   uint64_t timer_expired;
   ssize_t num_read = ::read(timerfd_, &timer_expired, sizeof(timer_expired));
   if (num_read != sizeof(timer_expired)) {
