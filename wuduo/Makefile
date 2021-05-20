@@ -1,15 +1,18 @@
 CPP = $(CXX)
-CPPFLAGS = -g -std=c++2a -Wall -Wextra -O2
-LDFLAGS = -pthread
+CPPFLAGS = -g -std=c++17 -Wall -Wextra -O0
+LDFLAGS = -lpthread
 
-ServerFiles = $(shell find . -type f -regex '.*.cpp')
+CppFiles = $(shell find . -type f -regex '.*.cpp')
 
-ServerObjects = $(ServerFiles:.cpp=.o)
+Objects = $(CppFiles:.cpp=.o)
 
 default: server_test
 
-server_test: $(ServerObjects)
-	g++ $(CPPFLAGS) -o $@ $^ $(LDFLAGS)
+server_test: $(Objects)
+	$(CPP) -o $@ $^ $(CPPFLAGS) $(LDFLAGS)
+
+$(Objects): $(CppFiles)
+	$(CPP) -o $@ $^ $(CPPFLAGS) $(LDFLAGS)
 
 clean:
 	rm ./*.o
