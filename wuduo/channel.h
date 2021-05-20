@@ -42,12 +42,16 @@ class Channel : noncopyable {
   uint32_t get_events() const { return events_; }
   void set_revents(uint32_t e) { revents_ = e; }
   bool is_none_events() const { return events_ == 0; }
-  bool is_in_interst_list() const { return in_interest_list; }
+  bool is_in_interst_list() const { return in_interest_list_; }
 
   void enable_reading();
   void enable_writing();
   void disable_reading();
   void disable_writing();
+  void disable_all();
+
+  bool is_reading();
+  bool is_writing();
 
  private:
   void update();
@@ -57,7 +61,7 @@ class Channel : noncopyable {
   uint32_t events_;
   uint32_t revents_;
   // used by Epoller
-  bool in_interest_list;
+  bool in_interest_list_;
 
   ReadCallback read_callback_;
   WriteCallback write_callback_;

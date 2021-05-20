@@ -1,4 +1,5 @@
 #include <stdexcept>
+#include <iostream>
 
 #include <unistd.h>
 #include <error.h>
@@ -53,11 +54,22 @@ void Epoller::update_channel(Channel* channel) {
   if (!channel->is_in_interst_list()) {
     op = EPOLL_CTL_ADD;
   } else {
-    op = EPOLL_CTL_MOD;
+    op = channel->is_none_events() ? EPOLL_CTL_DEL : EPOLL_CTL_MOD;
   }
+  std::cerr << "Epoller::epoll_ctl() [" << 
+    (op == EPOLL_CTL_ADD ? "Add" : op == EPOLL_CTL_MOD ? "Mod" : "Del") << "]\n";;
   if (::epoll_ctl(epollfd_, op, channel->get_fd(), &ee) != 0) {
     if (errno != EINTR) {
-      throw std::logic_error("Epoller::epoll_ctl()");
+      std::string msg = [] () -> std::string {
+        if (errno == EEXIST) {
+          return "Existed fd";
+        } else if (errno == ENOENT) {
+          return "ENOENT";
+        } else {
+          return "Others";
+        }
+      } ();
+      throw std::logic_error("Epoller::epoll_ctl() failed " + msg);
     }
   }
 }

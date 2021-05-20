@@ -13,7 +13,7 @@ Channel::Channel(EventLoop* loop, int fd)
   fd_{fd}, 
   events_{0},
   revents_{0},
-  in_interest_list{false} {}
+  in_interest_list_{false} {}
 
 Channel::~Channel() {}
 
@@ -53,7 +53,7 @@ void Channel::enable_writing() {
 }
 
 void Channel::disable_reading() {
-  events_ &= ~EPOLLIN;
+  events_ &= ~(EPOLLIN | EPOLLPRI);
   update();
 }
 
@@ -62,9 +62,22 @@ void Channel::disable_writing() {
   update();
 }
 
+void Channel::disable_all() {
+  events_ = 0;
+  update();
+}
+
+bool Channel::is_reading() {
+  return events_ & (EPOLLIN | EPOLLPRI);
+}
+
+bool Channel::is_writing() {
+  return events_ & EPOLLOUT;
+}
+
 void Channel::update() {
   loop_->update_channel(this);
-  in_interest_list = true;
+  in_interest_list_ = !is_none_events();
 }
 
 }

@@ -52,7 +52,6 @@ void EventLoop::loop() {
   looping_ = true;
   for (; !quit_;) {
     const auto active_channels = epoller_.wait();
-    std::cout << active_channels.size() << '\n';
     for (auto channel : active_channels) {
       channel->handle_events();
     }
