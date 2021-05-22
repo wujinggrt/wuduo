@@ -73,6 +73,7 @@ void EventLoop::run_in_loop(std::function<void()> task) {
 }
 
 void EventLoop::queue_in_loop(std::function<void()> task) {
+  // critical section
   {
     std::scoped_lock guard{mutex_};
     pending_tasks_.push_back(std::move(task));

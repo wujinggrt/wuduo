@@ -24,6 +24,7 @@ class EventLoop : noncopyable {
    void loop();
    void quit();
 
+   // thread-safe
    void run_in_loop(std::function<void()> task);
    void queue_in_loop(std::function<void()> task);
 
