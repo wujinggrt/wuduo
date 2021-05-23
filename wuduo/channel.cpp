@@ -5,6 +5,7 @@
 
 #include "channel.h"
 #include "event_loop.h"
+#include "log.h"
 
 namespace wuduo {
 
@@ -20,7 +21,10 @@ Channel::~Channel() {}
 void Channel::handle_events() {
   loop_->assert_in_loop_thread();
   if ((revents_ & EPOLLHUP) && !(revents_ & EPOLLIN)) {
-    std::cerr << "Channel::handle_events() EPOLLHUP\n";
+    LOG_INFO("Channel::handle_events() EPOLLHUP");
+    if (close_callback_) {
+      close_callback_();
+    }
   }
   if (revents_ & EPOLLERR) {
     if (error_callback_) {

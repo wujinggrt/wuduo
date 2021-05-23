@@ -10,6 +10,7 @@
 
 #include "event_loop.h"
 #include "channel.h"
+#include "log.h"
 
 namespace wuduo {
 
@@ -62,6 +63,9 @@ void EventLoop::loop() {
 
 void EventLoop::quit() {
   quit_ = true;
+  if (!in_loop_thread()) {
+    wakeup();
+  }
 }
 
 void EventLoop::run_in_loop(std::function<void()> task) {
@@ -96,7 +100,7 @@ void EventLoop::wakeup() {
   uint64_t wakeup_val = 1;
   ssize_t num_write = ::write(wakeupfd_, &wakeup_val, sizeof(wakeup_val));
   if (num_write != sizeof(wakeup_val)) {
-    std::cerr << "failed to wakeup in wakeupfd_\n";
+    LOG_ERROR("Failed to wakeup()");
   }
 }
 
