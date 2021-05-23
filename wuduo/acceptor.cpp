@@ -1,7 +1,10 @@
-#include <sys/socket.h>
+#include <cassert>
 #include <iostream>
-#include <unistd.h>
+#include <cstring>
 #include <utility>
+
+#include <sys/socket.h>
+#include <unistd.h>
 
 #include "acceptor.h"
 #include "channel.h"
@@ -44,6 +47,7 @@ Acceptor::~Acceptor() {
 
 void Acceptor::listen() {
   loop_->assert_in_loop_thread();
+  assert(!listening_);
   listening_ = true;
   if (::listen(acceptfd_, SOMAXCONN) == -1) {
     LOG_FATAL("listen()");
@@ -51,11 +55,13 @@ void Acceptor::listen() {
   channel_.set_read_callback([this] {
     loop_->assert_in_loop_thread();
     sockaddr_in peer;
-    socklen_t len;
+    std::memset(&peer, 0, sizeof(peer));
+    socklen_t len = static_cast<socklen_t>(sizeof(peer));
     for (;;) {
-      int connect_fd = ::accept4(acceptfd_, reinterpret_cast<sockaddr*>(&peer), &len, SOCK_CLOEXEC | SOCK_NONBLOCK);
+      int connect_fd = ::accept4(acceptfd_, reinterpret_cast<sockaddr*>(&peer), 
+          reinterpret_cast<socklen_t*>(&len), SOCK_CLOEXEC | SOCK_NONBLOCK);
       if (connect_fd == -1) {
-        LOG_ERROR("accept4() return -1");
+        LOG_ERROR("accept4(): %s(fd:%d, peer*:%p, len:%p[=%d])", std::strerror(errno), acceptfd_, reinterpret_cast<sockaddr*>(&peer), &len, len);
         if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
           LOG_INFO("EAGAIN, EWOULDBLOCK");
           return ;

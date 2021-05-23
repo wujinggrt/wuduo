@@ -3,6 +3,7 @@
 #include "event_loop_thread.h"
 #include "event_loop_thread_pool.h"
 #include "event_loop.h"
+#include "log.h"
 
 namespace wuduo {
 
@@ -11,6 +12,7 @@ EventLoopThreadPool::EventLoopThreadPool(EventLoop* base_loop, int num_threads)
   num_threads_{num_threads},
   started_{false},
   next_{0} {
+  LOG_INFO("EventLoopThreadPool()");
   assert(num_threads >= 0);
 }
 

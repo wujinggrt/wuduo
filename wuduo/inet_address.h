@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <string>
 #include <string_view>
 
 #include <netinet/in.h>
@@ -22,6 +23,11 @@ class InetAddress {
   socklen_t get_len() const {
     return sizeof(address_);
   }
+  uint16_t get_port() const;
+  std::string get_ip() const;
+
+  static InetAddress local_from(int connect_sockfd);
+  static InetAddress peer_from(int connect_sockfd);
 
  private:
   sockaddr_in address_;

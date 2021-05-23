@@ -15,6 +15,7 @@ class EventLoopThreadPool : noncopyable {
  public:
   EventLoopThreadPool(EventLoop* base_loop, int num_threads);
 
+  // can be called only within base_loop_.loop.
   void start();
 
   EventLoop* get_next_loop();
