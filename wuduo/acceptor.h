@@ -3,12 +3,9 @@
 #include "inet_address.h"
 #include "event_loop.h"
 #include "channel.h"
+#include "callbacks.h"
 
 namespace wuduo {
-
-// the user should mannualy close the socket that connected the peer client.
-  using NewConnectionCallback = 
-    std::function<void(int connect_fd, InetAddress peer)>;
 
 class Acceptor {
  public:

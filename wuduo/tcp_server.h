@@ -10,6 +10,7 @@
 #include "inet_address.h"
 #include "acceptor.h"
 #include "event_loop_thread_pool.h"
+#include "callbacks.h"
 
 namespace wuduo {
 
@@ -28,7 +29,7 @@ class TcpServer : noncopyable {
   void start();
 
  private:
-  void handle_new_connection(int connect_fd, InetAddress peer);
+  void new_connection(int connect_fd, InetAddress peer);
 
   EventLoop* loop_;
   InetAddress local_;

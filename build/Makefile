@@ -1,5 +1,5 @@
 CPP = g++
-CPPFLAGS = -g -std=c++17 -Wall -Wextra -O0
+CPPFLAGS = -g -std=c++17 -Wall -Wextra -O1
 # -lpthread should be positioned on last
 LDFLAGS = -lgtest -lgtest_main -lpthread
 

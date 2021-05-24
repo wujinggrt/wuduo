@@ -12,7 +12,6 @@ EventLoopThreadPool::EventLoopThreadPool(EventLoop* base_loop, int num_threads)
   num_threads_{num_threads},
   started_{false},
   next_{0} {
-  LOG_INFO("EventLoopThreadPool()");
   assert(num_threads >= 0);
 }
 

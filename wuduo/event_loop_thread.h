@@ -19,13 +19,9 @@ class EventLoopThread {
 
  private:
   EventLoop* loop_;
-#if 0
   bool started_;
   bool exiting_;
   std::unique_ptr<std::thread> thread_;
-  std::mutex mutex_;
-  std::condition_variable cond_;
-#endif
 };
 
 }

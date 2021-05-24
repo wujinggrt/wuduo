@@ -24,6 +24,9 @@ class Epoller : noncopyable {
   void remove_channel(Channel* channel);
 
  private:
+  // a helper function to get epoll_ctl op argument.
+  int get_ctl_op_from(Channel* channel) const;
+
   EventLoop* owner_loop_;
   std::vector<epoll_event> events_;
   int epollfd_;

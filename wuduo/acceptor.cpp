@@ -9,6 +9,7 @@
 #include "acceptor.h"
 #include "channel.h"
 #include "log.h"
+#include "util.h"
 
 namespace {
   int create_socket() {
@@ -61,12 +62,13 @@ void Acceptor::listen() {
       int connect_fd = ::accept4(acceptfd_, reinterpret_cast<sockaddr*>(&peer), 
           reinterpret_cast<socklen_t*>(&len), SOCK_CLOEXEC | SOCK_NONBLOCK);
       if (connect_fd == -1) {
-        LOG_ERROR("accept4(): %s(fd:%d, peer*:%p, len:%p[=%d])", std::strerror(errno), acceptfd_, reinterpret_cast<sockaddr*>(&peer), &len, len);
-        if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
-          LOG_INFO("EAGAIN, EWOULDBLOCK");
+        int saved_errno = errno;
+        if ((saved_errno == EAGAIN) || (saved_errno == EWOULDBLOCK)) {
           return ;
         }
-        if ((errno != ECONNABORTED) | (errno != EMFILE)) {
+        LOG_ERROR("accept4(): %s(fd:%d, peer*:%p, len:%p[=%d])", 
+            strerror_thread_local(saved_errno), acceptfd_, reinterpret_cast<sockaddr*>(&peer), &len, len);
+        if ((saved_errno != ECONNABORTED) | (saved_errno != EMFILE)) {
           LOG_FATAL("unexcepted accept4");
         }
         return ;
