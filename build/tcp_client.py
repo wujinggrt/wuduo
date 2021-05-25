@@ -16,12 +16,12 @@ def client_request(num :int):
 
     client_socket.send(sentence.encode())
 
-    modified = client_socket.recv(1024)
-    recved = '[{}] From server:{}'.format(num, modified.decode())
-    '''
+    modified = 'nothing'.encode()
+    try:
+        modified = client_socket.recv(1024)
+        recved = '[{}] From server:{}'.format(num, modified.decode())
     except:
-        recved = '[{}] Failed to deal socket fd'.format(num)
-    '''
+        recved = '[{}] Failed to deal socket fd, modified[{}]'.format(num, modified.decode())
 
     print('[{}]'.format(num), 'local:', client_socket.getsockname())
     print(recved)

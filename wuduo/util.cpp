@@ -7,6 +7,7 @@
 #include <netinet/tcp.h>
 
 #include "util.h"
+#include "log.h"
 
 namespace wuduo {
 
@@ -24,6 +25,7 @@ int get_socket_error(int sockfd) {
   int optval;
   socklen_t len = static_cast<socklen_t>(sizeof(optval));
   if (::getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &optval, &len) == -1) {
+    LOG_ERROR("getsockopt() failed to run, maybe bad sockfd[%d], [%d:%s]", sockfd, errno, strerror(errno));
     return errno;
   }
   return optval;

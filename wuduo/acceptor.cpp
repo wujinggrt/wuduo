@@ -73,7 +73,6 @@ void Acceptor::listen() {
         }
         return ;
       }
-      LOG_INFO("Connected with peer");
       if (new_connection_callback_) {
         InetAddress inet_peer{peer};
         new_connection_callback_(connect_fd, inet_peer);

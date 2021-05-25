@@ -19,7 +19,7 @@ void log_base(const char* fmt, ...) {
   auto now_time = std::chrono::system_clock::to_time_t(now);
   std::ostringstream os;
   os << std::this_thread::get_id();
-  i += std::snprintf(buf, sizeof(buf), "[%d, %s] %s ", 
+  i += std::snprintf(buf, sizeof(buf), "\033[38;2;114;115;115m[%d, %s] %s \033[0m", 
       getpid(), os.str().c_str(), std::asctime(std::localtime(&now_time)));
 
   va_start(ap, fmt);

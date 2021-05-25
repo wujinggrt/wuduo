@@ -1,5 +1,8 @@
+#include <cstring>
+#include <cassert>
 #include <string>
 #include <utility>
+#include <chrono>
 
 #include <sys/socket.h>
 #include <netinet//in.h>
@@ -7,6 +10,8 @@
 #include <signal.h>
 #include <endian.h>
 #include <unistd.h>
+
+#include <time.h>
 
 #include "util.h"
 #include "tcp_server.h"
@@ -45,33 +50,34 @@ void TcpServer::new_connection(int connection_fd, InetAddress peer) {
   LOG_INFO("New connection, fd[%d] local (%s, %d), peer (%s, %d)", connection_fd,
       local_.get_ip().c_str(), local_.get_port(),
       peer.get_ip().c_str(), peer.get_port());
-
   auto* io_loop = event_loop_thread_pool_.get_next_loop();
-  auto connection = std::make_shared<TcpConnection>(io_loop, connection_fd, peer);
-  connections_.insert(connection);
-  connection->set_message_callback([connection_fd](const TcpConnectionPtr&, std::string msg) {
-    LOG_INFO("Readed msg [%s], \nechoing...", msg.c_str());
+  (void) io_loop;
 
+  auto conn = std::make_shared<TcpConnection>(io_loop, connection_fd, peer);
+  auto [iter, ok] = connections_.insert(conn);
+  (void) iter;
+  assert(ok);
+  conn->set_message_callback([connection_fd] (const TcpConnectionPtr&, std::string msg) {
+    LOG_INFO("connection_fd[%d] read[%s]", connection_fd, msg.c_str());
     InetAddress local = InetAddress::local_from(connection_fd);
     InetAddress peer = InetAddress::peer_from(connection_fd);
     std::string echo_msg{"Hello, server"};
     std::string local_str = std::string{"("} + local.get_ip() + ", " + std::to_string(local.get_port()) + ")";
-    std::string peer_str = std::string{", client("} + peer.get_ip() + ", " + std::to_string(peer.get_port()) + ")\n";
+    std::string peer_str = std::string{", client("} + peer.get_ip() + ", " + std::to_string(peer.get_port()) + ")";
     echo_msg += local_str + peer_str;
-    echo_msg += "\n" + msg;
-    if (::write(connection_fd, echo_msg.c_str(), echo_msg.size()) < 0) {
-      int err = get_socket_error(connection_fd);
-      LOG_ERROR("::write(sockfd, ), [%d:%s]", err, strerror_thread_local(err));
+    echo_msg += " - " + msg;
+    if (::write(connection_fd, echo_msg.data(), echo_msg.size()) == -1) {
+      LOG_ERROR("connection_fd[%d] failed to write [%d:%s]", connection_fd, errno, strerror_thread_local(errno));
     }
   });
-  connection->set_close_connection_callback([this, connection_fd](const TcpConnectionPtr& ptr) {
+  conn->set_close_connection_callback([connection_fd, this] (const TcpConnectionPtr& conn) {
     ::close(connection_fd);
-    connections_.erase(ptr);
-    LOG_INFO("Closed connection_fd[%d]", connection_fd);
+    LOG_INFO("connection_fd[%d] closed", connection_fd);
+    connections_.erase(conn);
   });
-  io_loop->run_in_loop([connection, connection_fd] {
-    connection->established();
-    LOG_INFO("New connection established, connection_fd[%d]", connection_fd);
+  io_loop->run_in_loop([conn, connection_fd] { 
+    conn->established();
+    LOG_INFO("connection_fd[%d] established", connection_fd);
   });
 }
 

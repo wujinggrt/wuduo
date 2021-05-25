@@ -5,6 +5,7 @@
 #include <sys/socket.h>
 #include <errno.h>
 
+#include "util.h"
 #include "inet_address.h"
 #include "log.h"
 
@@ -45,7 +46,8 @@ InetAddress InetAddress::local_from(int connect_sockfd) {
   std::memset(&addr, 0, sizeof(addr));
   socklen_t len = static_cast<socklen_t>(sizeof(addr));
   if (::getsockname(connect_sockfd, reinterpret_cast<sockaddr*>(&addr), &len) == -1) {
-    LOG_ERROR("InetAddress::local_from(sockfd), %s", std::strerror(errno));
+    int err = errno;
+    LOG_ERROR("InetAddress::local_from(sockfd: %d), [%d:%s]", connect_sockfd, err, strerror_thread_local(err));
   }
   return InetAddress{*reinterpret_cast<sockaddr_in*>(&addr)};
 }
@@ -55,7 +57,8 @@ InetAddress InetAddress::peer_from(int connect_sockfd) {
   std::memset(&addr, 0, sizeof(addr));
   socklen_t len = static_cast<socklen_t>(sizeof(addr));
   if (::getpeername(connect_sockfd, reinterpret_cast<sockaddr*>(&addr), &len) == -1) {
-    LOG_ERROR("InetAddress::peer_from(sockfd), %s", std::strerror(errno));
+    int err = errno;
+    LOG_ERROR("InetAddress::peer_from(sockfd: %d), [%d:%s]", connect_sockfd, err, strerror_thread_local(err));
   }
   return InetAddress{*reinterpret_cast<sockaddr_in*>(&addr)};
 }

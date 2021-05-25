@@ -1,5 +1,6 @@
 #include <thread>
 #include <iostream>
+#include <cassert>
 
 #include <sys/epoll.h>
 
@@ -16,7 +17,9 @@ Channel::Channel(EventLoop* loop, int fd)
   revents_{0},
   in_interest_list_{false} {}
 
-Channel::~Channel() {}
+Channel::~Channel() {
+  assert(!in_interest_list_);
+}
 
 void Channel::handle_events() {
   loop_->assert_in_loop_thread();
