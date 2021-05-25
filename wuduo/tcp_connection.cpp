@@ -45,7 +45,7 @@ void TcpConnection::destroyed() {
 void TcpConnection::handle_read() {
   loop_->assert_in_loop_thread();
   auto fd = channel_.get_fd();
-  char buf[1024] = "";
+  char buf[4096] = "";
   LOG_DEBUG("sockfd[%d] Handling read", channel_.get_fd());
   auto num_read = ::read(fd, buf, sizeof(buf));
   if (num_read > 0) {

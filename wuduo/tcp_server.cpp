@@ -58,9 +58,9 @@ void TcpServer::new_connection(int connection_fd, InetAddress peer) {
   conn->set_message_callback(message_callback_);
   conn->set_close_callback(
       [this] (const TcpConnectionPtr& conn) { remove_connection(conn); });
-  io_loop->run_in_loop([conn, connection_fd] { 
+  io_loop->run_in_loop([conn] { 
     conn->established();
-    LOG_INFO("connection_fd[%d] established", connection_fd);
+    LOG_INFO("sockfd[%d] established", conn->get_channel()->get_fd());
   });
 }
 
