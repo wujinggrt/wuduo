@@ -24,6 +24,9 @@ class TcpServer : noncopyable {
   void set_new_connection_callback(NewConnectionCallback cb) {
     new_connection_callback_ = std::move(cb);
   }
+  void set_message_callback(MessageCallback cb) {
+    message_callback_ = std::move(cb);
+  }
 
   // thread safe, can be called by other thread but only once.
   void start();
@@ -39,6 +42,7 @@ class TcpServer : noncopyable {
   Acceptor acceptor_;
   EventLoopThreadPool event_loop_thread_pool_;
   NewConnectionCallback new_connection_callback_;
+  MessageCallback message_callback_;
 
   std::unordered_set<std::shared_ptr<TcpConnection>> connections_;
 };

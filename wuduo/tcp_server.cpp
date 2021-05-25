@@ -51,26 +51,12 @@ void TcpServer::new_connection(int connection_fd, InetAddress peer) {
       local_.get_ip().c_str(), local_.get_port(),
       peer.get_ip().c_str(), peer.get_port());
   auto* io_loop = event_loop_thread_pool_.get_next_loop();
-  (void) io_loop;
-
   auto conn = std::make_shared<TcpConnection>(io_loop, connection_fd, peer);
   auto [iter, ok] = connections_.insert(conn);
   (void) iter;
   assert(ok);
-  conn->set_message_callback([connection_fd] (const TcpConnectionPtr&, std::string msg) {
-    LOG_INFO("connection_fd[%d] read[%s]", connection_fd, msg.c_str());
-    InetAddress local = InetAddress::local_from(connection_fd);
-    InetAddress peer = InetAddress::peer_from(connection_fd);
-    std::string echo_msg{"Hello, server"};
-    std::string local_str = std::string{"("} + local.get_ip() + ", " + std::to_string(local.get_port()) + ")";
-    std::string peer_str = std::string{", client("} + peer.get_ip() + ", " + std::to_string(peer.get_port()) + ")";
-    echo_msg += local_str + peer_str;
-    echo_msg += " - " + msg;
-    if (::write(connection_fd, echo_msg.data(), echo_msg.size()) == -1) {
-      LOG_ERROR("connection_fd[%d] failed to write [%d:%s]", connection_fd, errno, strerror_thread_local(errno));
-    }
-  });
-  conn->set_close_connection_callback(
+  conn->set_message_callback(message_callback_);
+  conn->set_close_callback(
       [this] (const TcpConnectionPtr& conn) { remove_connection(conn); });
   io_loop->run_in_loop([conn, connection_fd] { 
     conn->established();

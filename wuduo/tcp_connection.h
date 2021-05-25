@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <utility>
+#include <string_view>
 
 #include "event_loop.h"
 #include "channel.h"
@@ -20,7 +21,7 @@ class TcpConnection : noncopyable,
    void set_message_callback(MessageCallback cb) {
      message_callback_ = std::move(cb);
    }
-   void set_close_connection_callback(CloseCallback cb) {
+   void set_close_callback(CloseCallback cb) {
      close_callback_ = std::move(cb);
    }
    bool is_connected() const { return state_ == kConnected; }
@@ -34,6 +35,8 @@ class TcpConnection : noncopyable,
    void established();
    // the last call to channel, then it will be destruct.
    void destroyed();
+
+   void send_in_loop(std::string_view data);
 
  private:
    void handle_read();

@@ -18,8 +18,8 @@ TcpConnection::TcpConnection(EventLoop* loop, int sockfd, InetAddress peer)
   reading_{false} {
   channel_.set_read_callback([this] { handle_read(); });
   channel_.set_write_callback([this] { handle_write(); });
-  // set_nodelay(sockfd, true);
-  // set_keep_alive(sockfd, true);
+  set_nodelay(sockfd, true);
+  set_keep_alive(sockfd, true);
 }
 
 TcpConnection::~TcpConnection() {

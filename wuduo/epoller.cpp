@@ -35,8 +35,7 @@ Epoller::ChannelList Epoller::wait() {
   const int num_ready = ::epoll_wait(epollfd_, events_.data(), max_events, -1);
   if (num_ready == -1) {
     if (errno != EINTR) {
-      LOG_FATAL("Epoller::epoll_wait(), [%s]", std::strerror(errno));
-      throw std::runtime_error("Epoller::epoll_wait()");
+      LOG_FATAL("[%d:%s]", errno, strerror_thread_local(errno));
     }
   }
   if (num_ready > 0) {
