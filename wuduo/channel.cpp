@@ -81,7 +81,6 @@ bool Channel::is_writing() {
 
 void Channel::update() {
   loop_->update_channel(this);
-  in_interest_list_ = !is_none_events();
 }
 
 }

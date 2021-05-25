@@ -70,14 +70,23 @@ void TcpServer::new_connection(int connection_fd, InetAddress peer) {
       LOG_ERROR("connection_fd[%d] failed to write [%d:%s]", connection_fd, errno, strerror_thread_local(errno));
     }
   });
-  conn->set_close_connection_callback([connection_fd, this] (const TcpConnectionPtr& conn) {
-    ::close(connection_fd);
-    LOG_INFO("connection_fd[%d] closed", connection_fd);
-    connections_.erase(conn);
-  });
+  conn->set_close_connection_callback(
+      [this] (const TcpConnectionPtr& conn) { remove_connection(conn); });
   io_loop->run_in_loop([conn, connection_fd] { 
     conn->established();
     LOG_INFO("connection_fd[%d] established", connection_fd);
+  });
+}
+
+void TcpServer::remove_connection(const TcpConnectionPtr& conn) {
+  loop_->run_in_loop([this, conn] {
+    auto num_erased = connections_.erase(conn);
+    (void)num_erased;
+    assert(num_erased == 1);
+    auto* io_loop = conn->get_loop();
+    io_loop->run_in_loop([conn] {
+      conn->destroyed();
+    });
   });
 }
 

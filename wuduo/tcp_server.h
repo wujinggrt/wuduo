@@ -31,6 +31,9 @@ class TcpServer : noncopyable {
  private:
   void new_connection(int connect_fd, InetAddress peer);
 
+  // this can be called directly to force tcp conn to close.
+  void remove_connection(const TcpConnectionPtr& conn);
+
   EventLoop* loop_;
   InetAddress local_;
   Acceptor acceptor_;

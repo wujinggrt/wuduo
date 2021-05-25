@@ -23,7 +23,8 @@ TcpConnection::TcpConnection(EventLoop* loop, int sockfd, InetAddress peer)
 }
 
 TcpConnection::~TcpConnection() {
-  LOG_DEBUG("TcpConnection dtor fd[%d]", channel_.get_fd());
+  LOG_DEBUG("TcpConnection dtor sockfd[%d]", channel_.get_fd());
+  ::close(channel_.get_fd());
 }
 
 void TcpConnection::established() {
@@ -37,10 +38,7 @@ void TcpConnection::destroyed() {
   loop_->assert_in_loop_thread();
   if (state_ == kConnected) {
     set_state(kDisconnected);
-  }
-  channel_.disable_all();
-  if (close_callback_) {
-    close_callback_(shared_from_this());
+    channel_.disable_all();
   }
 }
 
@@ -72,6 +70,7 @@ void TcpConnection::handle_close() {
   assert((state_ == kConnected) || (state_ == kDisconnecting));
   set_state(kDisconnected);
   channel_.disable_all();
+  LOG_DEBUG("sockfd[%d] channel disable_all [is_none_events:%d]", channel_.get_fd(), channel_.is_none_events() ? 1 : 0);
   if (close_callback_) {
     close_callback_(shared_from_this());
   }

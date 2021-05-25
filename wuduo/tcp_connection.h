@@ -27,10 +27,12 @@ class TcpConnection : noncopyable,
    bool is_disconnected() const { return state_ == kDisconnected; }
 
    Channel* get_channel() { return &channel_; }
+   EventLoop* get_loop() const { return loop_; }
 
    // called only once and in this loop_, so it may be defered to established.
    // state: connecting -> connected
    void established();
+   // the last call to channel, then it will be destruct.
    void destroyed();
 
  private:

@@ -52,7 +52,7 @@ Epoller::ChannelList Epoller::wait() {
   return active_channels;
 }
 
-// Channel should be detrermined whether it has already monitored in epollfd_
+// Channel should be detrermined whether it has already monitored in epollfd_.
 void Epoller::update_channel(Channel* channel) {
   owner_loop_->assert_in_loop_thread();
   ::epoll_event ee;
@@ -65,6 +65,8 @@ void Epoller::update_channel(Channel* channel) {
     int err = get_socket_error(channel->get_fd());
     LOG_ERROR("::epoll_ctl, %s, channel->fd[%d] [%d:%s]", 
         operation.c_str(), channel->get_fd(), err, strerror_thread_local(err));
+  } else {
+    set_state_in_interest_list(channel, op);
   }
 }
 
@@ -74,7 +76,23 @@ int Epoller::get_ctl_op_from(Channel* channel) const {
     assert(!channel->is_none_events());
     return EPOLL_CTL_ADD;
   }
-  return channel->is_none_events() ? EPOLL_CTL_DEL : EPOLL_CTL_MOD;
+  return channel->is_none_events() ?
+    EPOLL_CTL_DEL : EPOLL_CTL_MOD;
+}
+
+void Epoller::set_state_in_interest_list(Channel* channel, int op) const {
+  if (!channel->is_in_interst_list()) {
+    assert(op == EPOLL_CTL_ADD);
+    channel->set_in_interest_list(true);
+    return ;
+  }
+  if (channel->is_none_events()) {
+    assert(op == EPOLL_CTL_DEL);
+    channel->set_in_interest_list(false);
+    return;
+  }
+  assert(op == EPOLL_CTL_MOD);
+  channel->set_in_interest_list(true);
 }
 
 }
