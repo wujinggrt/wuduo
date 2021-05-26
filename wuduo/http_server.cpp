@@ -26,7 +26,7 @@ std::optional<RequestLine> RequestLine::from(std::string_view line) {
   line.remove_prefix(space_pos + 1);
   space_pos = line.find(' ');
   if (space_pos == std::string_view::npos) {
-    return std::nullopt;
+      return std::nullopt;
   }
   std::string_view url = line.substr(0, space_pos);
   line.remove_prefix(space_pos + 1);
@@ -90,36 +90,33 @@ void HttpServer::handle_read(const TcpConnectionPtr& conn, std::string msg) {
     metadata.in_buffer.clear();
     return ;
   }
-  auto num_read = msg.size();
-  if (metadata.parsing_state == 
-      HttpConnectionMetadata::ParsingState::kRequestLine) {
+  [[maybe_unused]] auto num_read = msg.size();
+  LOG_INFO("sockfd[%d] num_read[%u]", conn->get_channel()->get_fd(), num_read);
+  if (metadata.parsing_state == HttpConnectionMetadata::ParsingState::kRequestLine) {
     auto pos_cr_lf = msg.find('\r');
     if (pos_cr_lf == std::string::npos) {
       metadata.in_buffer += std::move(msg);
-      LOG_INFO("sockfd[%d] num_read[%u], wait for further read",
-          conn->get_channel()->get_fd(), num_read);
+      LOG_INFO("sockfd[%d] num_read[%u], wait for further read", conn->get_channel()->get_fd(), num_read);
       return ;
     }
     pos_cr_lf = metadata.in_buffer.size() + pos_cr_lf;
     metadata.in_buffer += std::move(msg);
-    auto request_line = RequestLine::from(
-        std::string_view{metadata.in_buffer.data(), pos_cr_lf + 1});
+    auto request_line = RequestLine::from(std::string_view{metadata.in_buffer.data(), pos_cr_lf + 1});
+    LOG_INFO("Parsed request line[method:%d url:%s version:%d]", 
+        request_line->method, request_line->url.c_str(), request_line->version);
     if (!request_line) {
-      LOG_ERROR("sockfd[%d] failed to parse request_line", conn->get_channel()->get_fd());
       // TODO: send error page and handle close.
       return ;
     }
     metadata.parsing_state = HttpConnectionMetadata::ParsingState::kFinished;
-    metadata.request_line = request_line.value();
   }
 
   if (metadata.parsing_state == HttpConnectionMetadata::ParsingState::kFinished) {
     int connection_fd = conn->get_channel()->get_fd();
-    LOG_INFO("Request message(from[%d]):\n%sRespond:\n%s",
+    LOG_INFO("Request message(from[%d]):\n%sResponse:\n%s", 
         connection_fd, metadata.in_buffer.c_str(), kHelloWorld.data());
     if (::write(connection_fd, kHelloWorld.data(), kHelloWorld.size()) == -1) {
-      LOG_ERROR("connection_fd[%d] failed to write [%d:%s]",
-          connection_fd, errno, strerror_thread_local(errno));
+      LOG_ERROR("connection_fd[%d] failed to write [%d:%s]", connection_fd, errno, strerror_thread_local(errno));
     }
     LOG_INFO("sockfd[%d] - Message responded", connection_fd);
   }
