@@ -8,6 +8,12 @@
 #include "log.h"
 #include "util.h"
 
+namespace {
+
+[[maybe_unused]]constexpr const size_t kReadBufferSize = 10;
+
+}
+
 namespace wuduo {
 
 TcpConnection::TcpConnection(EventLoop* loop, int sockfd, InetAddress peer)
@@ -45,16 +51,18 @@ void TcpConnection::destroyed() {
 void TcpConnection::handle_read() {
   loop_->assert_in_loop_thread();
   auto fd = channel_.get_fd();
-  char buf[4096] = "";
+  char buf[kReadBufferSize] = "";
   LOG_DEBUG("sockfd[%d] Handling read", channel_.get_fd());
   auto num_read = ::read(fd, buf, sizeof(buf));
-  if (num_read > 0) {
+  if (num_read >= 0) {
     if (message_callback_) {
       message_callback_(shared_from_this(), std::string{buf});
     }
-  } else if (num_read == 0) {
-    LOG_INFO("sockfd[%d] Peer closed", channel_.get_fd());
-    handle_close();
+  // } else if (num_read == 0) {
+    if (num_read == 0) {
+      LOG_INFO("sockfd[%d] Peer closed", channel_.get_fd());
+      handle_close();
+    }
   } else {
     LOG_ERROR("::read() [%s]", std::strerror(errno));
     handle_error();
@@ -66,11 +74,11 @@ void TcpConnection::handle_write() {
 }
 
 void TcpConnection::handle_close() {
-  LOG_DEBUG("sockfd[%d] state_[%d]", channel_.get_fd(), state_);
+  LOG_DEBUG("sockfd[%d] tcp_connection state_[%s]", channel_.get_fd(), get_state_string().c_str());
   assert((state_ == kConnected) || (state_ == kDisconnecting));
   set_state(kDisconnected);
   channel_.disable_all();
-  LOG_DEBUG("sockfd[%d] channel disable_all [is_none_events:%d]", channel_.get_fd(), channel_.is_none_events() ? 1 : 0);
+  LOG_DEBUG("sockfd[%d] channel disable_all [has_none_events:%d]", channel_.get_fd(), channel_.has_none_events() ? 1 : 0);
   if (close_callback_) {
     close_callback_(shared_from_this());
   }

@@ -41,7 +41,7 @@ class Channel : noncopyable {
   int get_fd() const { return fd_; }
   uint32_t get_events() const { return events_; }
   void set_revents(uint32_t e) { revents_ = e; }
-  bool is_none_events() const { return events_ == 0; }
+  bool has_none_events() const { return events_ == 0; }
   bool is_in_interst_list() const { return in_interest_list_; }
   void set_in_interest_list(bool in) { in_interest_list_ = in; }
 

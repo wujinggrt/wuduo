@@ -3,6 +3,7 @@
 #include <memory>
 #include <utility>
 #include <string_view>
+#include <string>
 
 #include "event_loop.h"
 #include "channel.h"
@@ -14,6 +15,7 @@ namespace wuduo {
 
 class TcpConnection : noncopyable, 
                       public std::enable_shared_from_this<TcpConnection> {
+    friend class HttpServer;
  public:
    TcpConnection(EventLoop* loop, int sockfd, InetAddress peer);
    ~TcpConnection();
@@ -39,14 +41,24 @@ class TcpConnection : noncopyable,
    void send_in_loop(std::string_view data);
 
  private:
+   enum State { kConnecting, kConnected, kDisconnecting, kDisconnected };
+
    void handle_read();
    void handle_write();
    void handle_close();
    void handle_error();
 
-   enum State { kConnecting, kConnected, kDisconnecting, kDisconnected };
-
    void set_state(State s) { state_ = s; }
+   std::string get_state_string() {
+     switch (state_) {
+       case kConnecting: return "kConnecting";
+       case kConnected: return "kConnected";
+       case kDisconnecting: return "kDisconnecting";
+       case kDisconnected: return "kDisconnected";
+       default: break;
+     }
+     return "unexpected state";
+   }
 
    EventLoop* loop_;
    State state_;

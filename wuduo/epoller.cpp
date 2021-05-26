@@ -72,10 +72,10 @@ void Epoller::update_channel(Channel* channel) {
 int Epoller::get_ctl_op_from(Channel* channel) const {
   if (!channel->is_in_interst_list()) {
     // channel has never added to epoll.
-    assert(!channel->is_none_events());
+    assert(!channel->has_none_events());
     return EPOLL_CTL_ADD;
   }
-  return channel->is_none_events() ?
+  return channel->has_none_events() ?
     EPOLL_CTL_DEL : EPOLL_CTL_MOD;
 }
 
@@ -85,7 +85,7 @@ void Epoller::set_state_in_interest_list(Channel* channel, int op) const {
     channel->set_in_interest_list(true);
     return ;
   }
-  if (channel->is_none_events()) {
+  if (channel->has_none_events()) {
     assert(op == EPOLL_CTL_DEL);
     channel->set_in_interest_list(false);
     return;

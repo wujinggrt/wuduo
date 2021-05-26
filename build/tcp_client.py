@@ -11,7 +11,8 @@ def client_request(num :int):
     client_socket.connect((server_ip, server_port))
 
     # sentence = input('Input lowercase sentence:')
-    sentence = "Hello server, I am " + str(num)
+    # sentence = "Hello server, I am " + str(num)
+    sentence = 'GET / HTTP/1.1\r\n\r\n'
     recved = ''
 
     client_socket.send(sentence.encode())
