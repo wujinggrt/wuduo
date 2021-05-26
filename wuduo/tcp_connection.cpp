@@ -58,7 +58,7 @@ void TcpConnection::handle_read() {
   if (num_read >= 0) {
     LOG_DEBUG("sockfd[%d] read num[%d]", channel_.get_fd(), num_read);
     if (message_callback_) {
-      message_callback_(shared_from_this(), std::string{buf});
+      message_callback_(shared_from_this(), std::string{buf, static_cast<std::string::size_type>(num_read)});
     }
     if (num_read == 0) {
       set_state(kDisconnecting);

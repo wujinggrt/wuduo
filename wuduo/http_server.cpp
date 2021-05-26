@@ -80,14 +80,13 @@ void HttpServer::handle_read(const TcpConnectionPtr& conn, std::string msg) {
   // EOF, peer closed.
   auto& metadata = [this, &conn] () -> HttpConnectionMetadata& {
     std::scoped_lock guard{mutex_};
+    if (connection_metadata_.size() > 100) {
+      LOG_INFO("CONN META [%d]", connection_metadata_.size());
+    }
     return connection_metadata_[conn];
   } ();
   if (msg.empty()) {
     connection_metadata_.erase(conn);
-    return ;
-  }
-  if (conn->is_disconnected()) {
-    metadata.in_buffer.clear();
     return ;
   }
   [[maybe_unused]] auto num_read = msg.size();

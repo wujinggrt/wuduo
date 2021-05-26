@@ -1,5 +1,5 @@
 CPP = g++
-CPPFLAGS = -g -std=c++17 -Wall -Wextra -O1
+CPPFLAGS = -g -std=c++17 -Wall -Wextra -O1 -fsanitize=address -fno-omit-frame-pointer
 # -lpthread should be positioned on last
 LDFLAGS = -lgtest -lgtest_main -lpthread
 
