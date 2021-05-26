@@ -53,13 +53,15 @@ void TcpConnection::handle_read() {
   auto fd = channel_.get_fd();
   char buf[kReadBufferSize] = "";
   LOG_DEBUG("sockfd[%d] Handling read", channel_.get_fd());
+  // if the epoller use edge-triggered, read should called until return -1
   auto num_read = ::read(fd, buf, sizeof(buf));
   if (num_read >= 0) {
+    LOG_DEBUG("sockfd[%d] read num[%d]", channel_.get_fd(), num_read);
     if (message_callback_) {
       message_callback_(shared_from_this(), std::string{buf});
     }
-  // } else if (num_read == 0) {
     if (num_read == 0) {
+      set_state(kDisconnecting);
       LOG_INFO("sockfd[%d] Peer closed", channel_.get_fd());
       handle_close();
     }
@@ -78,7 +80,8 @@ void TcpConnection::handle_close() {
   assert((state_ == kConnected) || (state_ == kDisconnecting));
   set_state(kDisconnected);
   channel_.disable_all();
-  LOG_DEBUG("sockfd[%d] channel disable_all [has_none_events:%d]", channel_.get_fd(), channel_.has_none_events() ? 1 : 0);
+  LOG_DEBUG("sockfd[%d] channel disable_all [has_none_events:%d]",
+      channel_.get_fd(), channel_.has_none_events() ? 1 : 0);
   if (close_callback_) {
     close_callback_(shared_from_this());
   }

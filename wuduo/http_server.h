@@ -22,20 +22,30 @@ namespace wuduo {
   "HTTP/1.1 400 Bad Request\r\nContent-Type: text/html;charset=utf-8 \r\n\r\n";
 
 struct RequestLine {
-  std::string method;
+  enum class Method { kGet, kHead, kPost, kUnknown };
+  enum class Version { kHttp10, kHttp11, kUnknown };
+
+  Method method{Method::kUnknown};
   std::string url;
-  std::string version;
+  Version version{Version::kUnknown};
 
   static std::optional<RequestLine> from(std::string_view line);
+
+  static std::optional<RequestLine> from(std::string_view method, 
+                                         std::string_view url, 
+                                         std::string_view version);
 };
 
-struct TcpConnectionMetadata {
+struct HttpConnectionMetadata {
   enum class ParsingState { kRequestLine, kHeaderLine, kEntityBody, kFinished };
 
+  ParsingState parsing_state{ParsingState::kRequestLine};
   std::string in_buffer;
   std::string out_buffer;
-  ParsingState parsing_state{ParsingState::kRequestLine};
+  RequestLine request_line;
 };
+
+struct HttpConnectionMetadata;
 
 class HttpServer : noncopyable {
  public:
@@ -46,11 +56,13 @@ class HttpServer : noncopyable {
  private:
   void handle_read(const TcpConnectionPtr& conn, std::string msg);
 
+  void send_error(const TcpConnectionPtr& conn, std::string_view msg);
+
   EventLoop* loop_;
   InetAddress local_;
   TcpServer server_;
   std::mutex mutex_;
-  std::unordered_map<TcpConnectionPtr, TcpConnectionMetadata> connection_metadata_;
+  std::unordered_map<TcpConnectionPtr, HttpConnectionMetadata> connection_metadata_;
 };
 
 }

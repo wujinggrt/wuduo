@@ -4,7 +4,11 @@ import socket
 import threading
 import sys
 
+error = False
+
 def client_request(num :int):
+    if error:
+        return None
     server_ip = '127.0.0.1'
     server_port = 12000
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -20,9 +24,10 @@ def client_request(num :int):
     modified = 'nothing'.encode()
     try:
         modified = client_socket.recv(1024)
-        recved = '[{}] From server:{}'.format(num, modified.decode())
+        recved = '[{}] From server:\n{}'.format(num, modified.decode())
     except:
         recved = '[{}] Failed to deal socket fd, modified[{}]'.format(num, modified.decode())
+        error
 
     print('[{}]'.format(num), 'local:', client_socket.getsockname())
     print(recved)

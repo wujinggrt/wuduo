@@ -10,24 +10,6 @@
 #include "log.h"
 #include "util.h"
 
-namespace {
-
-using namespace wuduo;
-
-[[maybe_unused]] void on_http_message_sample(const TcpConnectionPtr& conn, std::string msg) {
-  int connection_fd = conn->get_channel()->get_fd();
-  LOG_INFO("Request message(from[%d]):\n%s", connection_fd, msg.c_str());
-  LOG_INFO("Respond message:\n%s", kHelloWorld.data());
-  auto request_line = RequestLine::from(msg);
-  LOG_INFO("Parsed request line[method:%s url:%s version:%s]", request_line->method.c_str(), request_line->url.c_str(), request_line->version.c_str());
-  if (::write(connection_fd, kHelloWorld.data(), kHelloWorld.size()) == -1) {
-    LOG_ERROR("connection_fd[%d] failed to write [%d:%s]", connection_fd, errno, strerror_thread_local(errno));
-  }
-  LOG_INFO("sockfd[%d] - Message responded", connection_fd);
-}
-
-}
-
 namespace wuduo {
 
 std::optional<RequestLine> RequestLine::from(std::string_view line) {
@@ -49,7 +31,36 @@ std::optional<RequestLine> RequestLine::from(std::string_view line) {
   std::string_view url = line.substr(0, space_pos);
   line.remove_prefix(space_pos + 1);
   assert(space_pos + 1 < line.size());
-  return std::make_optional<RequestLine>({std::string{method}, std::string{url}, std::string{line}});
+
+  return RequestLine::from(method, url, line);
+}
+
+std::optional<RequestLine> RequestLine::from(std::string_view method, 
+                                             std::string_view url, 
+                                             std::string_view version) {
+  RequestLine ret;
+
+  if (method == "GET") {
+    ret.method = RequestLine::Method::kGet;
+  } else if (method == "HEAD") {
+    ret.method = RequestLine::Method::kHead;
+  } else if (method == "POST") {
+    ret.method = RequestLine::Method::kPost;
+  } else {
+    return std::nullopt;
+  }
+
+  ret.url = std::string{url};
+
+  if (version == "HTTP/1.0") {
+    ret.version = RequestLine::Version::kHttp10;
+  } else if (version == "HTTP/1.1") {
+    ret.version = RequestLine::Version::kHttp11;
+  } else {
+    return std::nullopt;
+  }
+
+  return ret;
 }
 
 HttpServer::HttpServer(EventLoop* loop, InetAddress address)
@@ -67,43 +78,48 @@ void HttpServer::start() {
 
 void HttpServer::handle_read(const TcpConnectionPtr& conn, std::string msg) {
   // EOF, peer closed.
-  auto&& [in_buffer, out_buffer, parsing_state] = [this, &conn] {
+  auto& metadata = [this, &conn] () -> HttpConnectionMetadata& {
     std::scoped_lock guard{mutex_};
-    auto& metadata = connection_metadata_[conn];
-    return std::tie(metadata.in_buffer, metadata.out_buffer, metadata.parsing_state);
+    return connection_metadata_[conn];
   } ();
-  (void) out_buffer;
   if (msg.empty()) {
     connection_metadata_.erase(conn);
     return ;
   }
   if (conn->is_disconnected()) {
-    in_buffer.clear();
+    metadata.in_buffer.clear();
     return ;
   }
-  [[maybe_unused]] auto num_read = msg.size();
-  LOG_INFO("sockfd[%d] num_read[%u]", conn->get_channel()->get_fd(), num_read);
-  if (parsing_state == TcpConnectionMetadata::ParsingState::kRequestLine) {
+  auto num_read = msg.size();
+  if (metadata.parsing_state == 
+      HttpConnectionMetadata::ParsingState::kRequestLine) {
     auto pos_cr_lf = msg.find('\r');
     if (pos_cr_lf == std::string::npos) {
-      in_buffer += std::move(msg);
-      LOG_INFO("sockfd[%d] num_read[%u], wait for further read", conn->get_channel()->get_fd(), num_read);
+      metadata.in_buffer += std::move(msg);
+      LOG_INFO("sockfd[%d] num_read[%u], wait for further read",
+          conn->get_channel()->get_fd(), num_read);
       return ;
     }
-    pos_cr_lf = in_buffer.size() + pos_cr_lf - 1;
-    in_buffer += std::move(msg);
-    auto request_line = RequestLine::from(in_buffer);
-    LOG_INFO("Parsed request line[method:%s url:%s version:%s]", 
-        request_line->method.c_str(), request_line->url.c_str(), request_line->version.c_str());
-    parsing_state = TcpConnectionMetadata::ParsingState::kFinished;
+    pos_cr_lf = metadata.in_buffer.size() + pos_cr_lf;
+    metadata.in_buffer += std::move(msg);
+    auto request_line = RequestLine::from(
+        std::string_view{metadata.in_buffer.data(), pos_cr_lf + 1});
+    if (!request_line) {
+      LOG_ERROR("sockfd[%d] failed to parse request_line", conn->get_channel()->get_fd());
+      // TODO: send error page and handle close.
+      return ;
+    }
+    metadata.parsing_state = HttpConnectionMetadata::ParsingState::kFinished;
+    metadata.request_line = request_line.value();
   }
 
-  if (parsing_state == TcpConnectionMetadata::ParsingState::kFinished) {
+  if (metadata.parsing_state == HttpConnectionMetadata::ParsingState::kFinished) {
     int connection_fd = conn->get_channel()->get_fd();
-    LOG_INFO("Request message(from[%d]):\n%s", connection_fd, in_buffer.c_str());
-    LOG_INFO("Respond message:\n%s", kHelloWorld.data());
+    LOG_INFO("Request message(from[%d]):\n%sRespond:\n%s",
+        connection_fd, metadata.in_buffer.c_str(), kHelloWorld.data());
     if (::write(connection_fd, kHelloWorld.data(), kHelloWorld.size()) == -1) {
-      LOG_ERROR("connection_fd[%d] failed to write [%d:%s]", connection_fd, errno, strerror_thread_local(errno));
+      LOG_ERROR("connection_fd[%d] failed to write [%d:%s]",
+          connection_fd, errno, strerror_thread_local(errno));
     }
     LOG_INFO("sockfd[%d] - Message responded", connection_fd);
   }

@@ -33,20 +33,21 @@ class TcpConnection : noncopyable,
    EventLoop* get_loop() const { return loop_; }
 
    // called only once and in this loop_, so it may be defered to established.
-   // state: connecting -> connected
+   // state: connecting -> connected, via server.
    void established();
    // the last call to channel, then it will be destruct.
    void destroyed();
 
    void send_in_loop(std::string_view data);
 
- private:
-   enum State { kConnecting, kConnected, kDisconnecting, kDisconnected };
-
    void handle_read();
    void handle_write();
+   // this can be called only once.
    void handle_close();
    void handle_error();
+
+ private:
+   enum State { kConnecting, kConnected, kDisconnecting, kDisconnected };
 
    void set_state(State s) { state_ = s; }
    std::string get_state_string() {
