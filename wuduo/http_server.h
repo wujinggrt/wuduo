@@ -38,16 +38,15 @@ struct RequestLine {
 };
 
 struct HttpConnectionMetadata {
-  enum class ParsingState { kRequestLine, kHeaderLines, kEntityBody, kFinished };
+  enum class ParsingPhase { kRequestLine, kHeaderLines, kEntityBody, kFinished };
   enum class ParsingError { kCorrect, kRequestLine, kHeaderLine, kEntityBody, kUnknown };
 
-  ParsingState parsing_state{ParsingState::kRequestLine};
+  ParsingPhase parsing_phase{ParsingPhase::kRequestLine};
+  ParsingError parsing_error{ParsingError::kCorrect};
   std::string in_buffer;
   std::string out_buffer;
   RequestLine request_line;
 };
-
-struct HttpConnectionMetadata;
 
 class HttpServer : noncopyable {
  public:
@@ -57,6 +56,8 @@ class HttpServer : noncopyable {
 
  private:
   void handle_read(const TcpConnectionPtr& conn, std::string msg);
+
+  void handle_error(const TcpConnectionPtr& conn, int error_code, std::string_view short_msg);
 
   void send_error_page(const TcpConnectionPtr& conn, int error_code, std::string_view short_msg) const;
 

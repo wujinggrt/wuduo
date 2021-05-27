@@ -40,11 +40,14 @@ void TcpConnection::established() {
   channel_.enable_reading();
 }
 
+// called via tcp server.
 void TcpConnection::destroyed() {
   loop_->assert_in_loop_thread();
   if (state_ == kConnected) {
     set_state(kDisconnected);
-    channel_.disable_all();
+    if (!channel_.has_none_events()) {
+      channel_.disable_all();
+    }
   }
 }
 
@@ -57,8 +60,32 @@ void TcpConnection::handle_read() {
   auto num_read = ::read(fd, buf, sizeof(buf));
   if (num_read >= 0) {
     LOG_DEBUG("sockfd[%d] read num[%d]", channel_.get_fd(), num_read);
+    std::string msg{buf, static_cast<std::string::size_type>(num_read)};
+    while (num_read == sizeof(buf)) {
+      num_read = ::read(fd, buf, sizeof(buf));
+      LOG_DEBUG("sockfd[%d] previous buffer is full, this turn reads num[%d]", channel_.get_fd(), num_read);
+      if (num_read == -1) {
+        int saved_errno = errno;
+        if ((saved_errno == EAGAIN) || (saved_errno == EWOULDBLOCK)) {
+          LOG_DEBUG("sockfd[%d] currently reads done.", channel_.get_fd(), num_read);
+          break;
+        } else {
+          LOG_ERROR("::read() [%s]", strerror_thread_local(saved_errno));
+          handle_error();
+          return ;
+        }
+      } else if (num_read > 0) {
+        msg += std::string{buf, static_cast<std::string::size_type>(num_read)};
+      } else {
+        // == 0
+        set_state(kDisconnecting);
+        LOG_INFO("sockfd[%d] Peer closed", channel_.get_fd());
+        handle_close();
+        return ;
+      }
+    }
     if (message_callback_) {
-      message_callback_(shared_from_this(), std::string{buf, static_cast<std::string::size_type>(num_read)});
+      message_callback_(shared_from_this(), std::move(msg));
     }
     if (num_read == 0) {
       set_state(kDisconnecting);
@@ -79,9 +106,12 @@ void TcpConnection::handle_close() {
   LOG_DEBUG("sockfd[%d] tcp_connection state_[%s]", channel_.get_fd(), get_state_string().c_str());
   assert((state_ == kConnected) || (state_ == kDisconnecting));
   set_state(kDisconnected);
-  channel_.disable_all();
-  LOG_DEBUG("sockfd[%d] channel disable_all [has_none_events:%d]",
-      channel_.get_fd(), channel_.has_none_events() ? 1 : 0);
+  // the epoller will not monitor this sockfd any longer,
+  // the handle_read will not be called after this.
+  if (!channel_.has_none_events()) {
+    channel_.disable_all();
+  }
+  // must be the last line, it will remove this from tcp server's set.
   if (close_callback_) {
     close_callback_(shared_from_this());
   }
@@ -90,6 +120,17 @@ void TcpConnection::handle_close() {
 void TcpConnection::handle_error() {
   int err = get_socket_error(channel_.get_fd());
   LOG_ERROR("handle_error(), SO_ERROR=%d [%s]", err, std::strerror(err));
+}
+
+void TcpConnection::force_close() {
+  if (state_ == kConnected || state_ == kDisconnecting) {
+    set_state(kDisconnecting);
+    loop_->run_in_loop([this] {
+      if (state_ == kConnected || state_ == kDisconnecting) {
+        handle_close();
+      }
+    });
+}
 }
 
 }

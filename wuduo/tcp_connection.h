@@ -15,6 +15,7 @@ namespace wuduo {
 
 class TcpConnection : noncopyable, 
                       public std::enable_shared_from_this<TcpConnection> {
+    friend class TcpServer;
     friend class HttpServer;
  public:
    TcpConnection(EventLoop* loop, int sockfd, InetAddress peer);
@@ -35,8 +36,6 @@ class TcpConnection : noncopyable,
    // called only once and in this loop_, so it may be defered to established.
    // state: connecting -> connected, via server.
    void established();
-   // the last call to channel, then it will be destruct.
-   void destroyed();
 
    void send_in_loop(std::string_view data);
 
@@ -46,7 +45,12 @@ class TcpConnection : noncopyable,
    void handle_close();
    void handle_error();
 
+   void force_close();
+
  private:
+   // the last call to channel, then it will be destruct.
+   void destroyed();
+
    enum State { kConnecting, kConnected, kDisconnecting, kDisconnected };
 
    void set_state(State s) { state_ = s; }

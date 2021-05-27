@@ -99,19 +99,31 @@ void HttpServer::start() {
 }
 
 void HttpServer::handle_read(const TcpConnectionPtr& conn, std::string msg) {
+  // can be called only in io_loop of the corresponding conn.
+  conn->get_loop()->assert_in_loop_thread();
   // EOF, peer closed.
   auto& metadata = [this, &conn] () -> HttpConnectionMetadata& {
     std::scoped_lock guard{mutex_};
     return connection_metadata_[conn];
   } ();
-  if (msg.empty()) {
+  // sockfd has closed.
+  // This member function is invoked as the conn's on message callback,
+  // msg.empty() indicates the conn finds that read on sockfd return 0, peer closed this connection.
+  //
+  // conn->is_disconnected() can be determined only under the condition that the conn use edge triggered,
+  // it was readed many times until return -1. The LT mode of epoller makes this latter condition never considered.
+  //
+  // Under ET mode of epoller, the channel inside the conn was notified only once, 
+  // the conn->handle_read will be called only once, but the read inside conn->handle_read would be called multiple times,
+  // so it should be noticed if conn is disconnected.
+  if (msg.empty() || (conn->is_disconnected())) {
     std::scoped_lock guard{mutex_};
     connection_metadata_.erase(conn);
     return ;
   }
   auto num_read = msg.size();
   LOG_INFO("sockfd[%d] num_read[%d], contents:\n%s", conn->get_channel()->get_fd(), num_read, msg.c_str());
-  if (metadata.parsing_state == HttpConnectionMetadata::ParsingState::kRequestLine) {
+  if (metadata.parsing_phase == HttpConnectionMetadata::ParsingPhase::kRequestLine) {
     auto pos_cr_lf = msg.find('\r');
     if (pos_cr_lf == std::string::npos) {
       metadata.in_buffer += std::move(msg);
@@ -124,17 +136,17 @@ void HttpServer::handle_read(const TcpConnectionPtr& conn, std::string msg) {
     if (!request_line) {
       // TODO: send error page and handle close.
       LOG_ERROR("Failed to parse request_line");
+      metadata.parsing_error = HttpConnectionMetadata::ParsingError::kRequestLine;
+      handle_error(conn, 400, "Bad request");
       return ;
     }
     LOG_INFO("Parsed request line[%s]", RequestLine::to_string(request_line.value()).c_str());
     metadata.request_line = request_line.value();
-    metadata.parsing_state = HttpConnectionMetadata::ParsingState::kHeaderLines;
+    metadata.parsing_phase = HttpConnectionMetadata::ParsingPhase::kHeaderLines;
   }
 
-  if (metadata.parsing_state == HttpConnectionMetadata::ParsingState::kHeaderLines) {
-    metadata.parsing_state = HttpConnectionMetadata::ParsingState::kFinished;
-    send_error_page(conn, 400, "Bad request");
-    return ;
+  if (metadata.parsing_phase == HttpConnectionMetadata::ParsingPhase::kHeaderLines) {
+    metadata.parsing_phase = HttpConnectionMetadata::ParsingPhase::kFinished;
     int connection_fd = conn->get_channel()->get_fd();
     LOG_INFO("Request message(from[%d]):\n%sResponse:\n%s", 
         connection_fd, metadata.in_buffer.c_str(), kHelloWorld.data());
@@ -143,6 +155,13 @@ void HttpServer::handle_read(const TcpConnectionPtr& conn, std::string msg) {
     }
     LOG_INFO("sockfd[%d] - Message responded", connection_fd);
   }
+}
+
+void HttpServer::handle_error(const TcpConnectionPtr& conn, int error_code, std::string_view short_msg) {
+  send_error_page(conn, error_code, short_msg);
+  conn->force_close();
+  std::scoped_lock guard{mutex_};
+  connection_metadata_.erase(conn);
 }
 
 void HttpServer::send_error_page(const TcpConnectionPtr& conn, int error_code, std::string_view short_msg) const {
