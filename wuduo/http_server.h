@@ -34,10 +34,12 @@ struct RequestLine {
   static std::optional<RequestLine> from(std::string_view method, 
                                          std::string_view url, 
                                          std::string_view version);
+  static std::string to_string(const RequestLine& line);
 };
 
 struct HttpConnectionMetadata {
-  enum class ParsingState { kRequestLine, kHeaderLine, kEntityBody, kFinished };
+  enum class ParsingState { kRequestLine, kHeaderLines, kEntityBody, kFinished };
+  enum class ParsingError { kCorrect, kRequestLine, kHeaderLine, kEntityBody, kUnknown };
 
   ParsingState parsing_state{ParsingState::kRequestLine};
   std::string in_buffer;
@@ -56,7 +58,7 @@ class HttpServer : noncopyable {
  private:
   void handle_read(const TcpConnectionPtr& conn, std::string msg);
 
-  void send_error(const TcpConnectionPtr& conn, std::string_view msg);
+  void send_error_page(const TcpConnectionPtr& conn, int error_code, std::string_view short_msg) const;
 
   EventLoop* loop_;
   InetAddress local_;

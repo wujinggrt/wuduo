@@ -2,4 +2,5 @@
 *.out
 compile_commands.json
 *_test
+*.log
 core
