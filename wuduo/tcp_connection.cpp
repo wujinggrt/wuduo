@@ -58,11 +58,11 @@ void TcpConnection::handle_read() {
   std::string msg;
   msg.reserve(kReadBufferSize);
   LOG_DEBUG("sockfd[%d] Handling read", channel_.get_fd());
-#if 0
+#if 1
   for (;;) {
     // if the epoller use edge-triggered, read should called until return -1
     auto num_read = ::read(fd, buf, sizeof(buf));
-
+    LOG_DEBUG("sockfd[%d] read num[%d]", fd, num_read);
     if (num_read > 0) {
       msg += std::string{buf, static_cast<std::string::size_type>(num_read)};
       if (num_read < static_cast<decltype(num_read)>(sizeof(buf))) {
@@ -73,6 +73,17 @@ void TcpConnection::handle_read() {
         return ;
       }
     } else if (num_read == 0) {
+      //Bug: when pervious read full buffer, but this time, the read returns 0.
+      // the msg is not empty, the message_callback_ does not recognize the close of peer.
+      if (message_callback_) {
+        if (msg.empty()) {
+          message_callback_(shared_from_this(), std::move(msg));
+        } else {
+          message_callback_(shared_from_this(), std::move(msg));
+          // empty string to indicates peer close to notify callback.
+          message_callback_(shared_from_this(), std::string{});
+        }
+      }
       set_state(kDisconnecting);
       LOG_INFO("sockfd[%d] Peer closed", channel_.get_fd());
       handle_close();
@@ -94,7 +105,7 @@ void TcpConnection::handle_read() {
   }
 #endif
 
-#if 1
+#if 0
   auto num_read = ::read(fd, buf, sizeof(buf));
   if (num_read >= 0) {
     LOG_DEBUG("sockfd[%d] read num[%d]", channel_.get_fd(), num_read);
