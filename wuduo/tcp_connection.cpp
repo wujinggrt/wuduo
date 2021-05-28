@@ -55,19 +55,56 @@ void TcpConnection::handle_read() {
   loop_->assert_in_loop_thread();
   auto fd = channel_.get_fd();
   char buf[kReadBufferSize] = "";
+  std::string msg;
+  msg.reserve(kReadBufferSize);
   LOG_DEBUG("sockfd[%d] Handling read", channel_.get_fd());
-  // if the epoller use edge-triggered, read should called until return -1
+#if 0
+  for (;;) {
+    // if the epoller use edge-triggered, read should called until return -1
+    auto num_read = ::read(fd, buf, sizeof(buf));
+
+    if (num_read > 0) {
+      msg += std::string{buf, static_cast<std::string::size_type>(num_read)};
+      if (num_read < static_cast<decltype(num_read)>(sizeof(buf))) {
+        // save once system call.
+        if (message_callback_) {
+          message_callback_(shared_from_this(), std::move(msg));
+        }
+        return ;
+      }
+    } else if (num_read == 0) {
+      set_state(kDisconnecting);
+      LOG_INFO("sockfd[%d] Peer closed", channel_.get_fd());
+      handle_close();
+      return ;
+    } else if (num_read == -1) {
+      // ends here.
+      if (int saved_errno = errno;
+          (saved_errno == EAGAIN) || (saved_errno == EWOULDBLOCK)) {
+        // the last read number of buffer size is all the last contents.
+        if (message_callback_) {
+          message_callback_(shared_from_this(), std::move(msg));
+        }
+      } else {
+        LOG_ERROR("::read() [%d:%s]", saved_errno, strerror_thread_local(saved_errno));
+        handle_error();
+      }
+      return ;
+    }
+  }
+#endif
+
+#if 1
   auto num_read = ::read(fd, buf, sizeof(buf));
   if (num_read >= 0) {
     LOG_DEBUG("sockfd[%d] read num[%d]", channel_.get_fd(), num_read);
-    std::string msg{buf, static_cast<std::string::size_type>(num_read)};
+    msg += std::string{buf, static_cast<std::string::size_type>(num_read)};
+
     while (num_read == sizeof(buf)) {
       num_read = ::read(fd, buf, sizeof(buf));
-      LOG_DEBUG("sockfd[%d] previous buffer is full, this turn reads num[%d]", channel_.get_fd(), num_read);
       if (num_read == -1) {
         int saved_errno = errno;
         if ((saved_errno == EAGAIN) || (saved_errno == EWOULDBLOCK)) {
-          LOG_DEBUG("sockfd[%d] currently reads done.", channel_.get_fd(), num_read);
           break;
         } else {
           LOG_ERROR("::read() [%s]", strerror_thread_local(saved_errno));
@@ -84,18 +121,22 @@ void TcpConnection::handle_read() {
         return ;
       }
     }
+
     if (message_callback_) {
       message_callback_(shared_from_this(), std::move(msg));
     }
+
     if (num_read == 0) {
       set_state(kDisconnecting);
       LOG_INFO("sockfd[%d] Peer closed", channel_.get_fd());
       handle_close();
+      return ;
     }
   } else {
     LOG_ERROR("::read() [%s]", std::strerror(errno));
     handle_error();
   }
+#endif
 }
 
 void TcpConnection::handle_write() {
@@ -111,8 +152,9 @@ void TcpConnection::handle_close() {
   if (!channel_.has_none_events()) {
     channel_.disable_all();
   }
-  // must be the last line, it will remove this from tcp server's set.
+  // may cause dtor calling.
   if (close_callback_) {
+    // may return immediately, performed by lambda in loop.
     close_callback_(shared_from_this());
   }
 }

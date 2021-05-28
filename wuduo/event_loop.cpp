@@ -43,8 +43,9 @@ EventLoop::EventLoop()
   wakeup_channel_.enable_reading();
 }
 
+// wakeup_channel_ will disable_all and remove from epoller.
 EventLoop::~EventLoop() {
-  assert(loop_in_this_thread == this);
+  LOG_DEBUG("EventLoop destructed");
   loop_in_this_thread = nullptr;
 }
 

@@ -64,13 +64,18 @@ void TcpServer::new_connection(int connection_fd, InetAddress peer) {
   });
 }
 
+// run in loop, may return immediately.
 void TcpServer::remove_connection(const TcpConnectionPtr& conn) {
   loop_->run_in_loop([this, conn] {
+  // the bug version as below:
+  // loop_->run_in_loop([this, &conn] {
+    // here, the connection should be sured not to free because of number of ref count as zero.
+    // because we need to call conn->destroyed(), which requires conn is not a dangling ref.
     auto num_erased = connections_.erase(conn);
     (void)num_erased;
     assert(num_erased == 1);
     auto* io_loop = conn->get_loop();
-    io_loop->run_in_loop([conn] {
+    io_loop->queue_in_loop([conn] {
       conn->destroyed();
     });
   });

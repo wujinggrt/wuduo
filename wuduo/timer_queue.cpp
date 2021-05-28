@@ -29,6 +29,7 @@ TimerQueue::TimerQueue(EventLoop* loop)
 }
 
 TimerQueue::~TimerQueue() {
+  // channel_ dtor will disable_all and remove from epoller.
   if (timerfd_ != -1) {
     ::close(timerfd_);
   }

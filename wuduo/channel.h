@@ -49,8 +49,9 @@ class Channel : noncopyable {
   void enable_writing();
   void disable_reading();
   void disable_writing();
-  // can not be called if this channel has not yet called either of enable function,
+  // can not be called if this channel has not called either of enable function,
   // only called after the channel was added to epoll's interest list.
+  // The epoller will remove fd from interest list.
   void disable_all();
 
   bool is_reading();

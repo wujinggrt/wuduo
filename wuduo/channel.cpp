@@ -19,6 +19,9 @@ Channel::Channel(EventLoop* loop, int fd)
 
 Channel::~Channel() {
   assert(!in_interest_list_);
+  if (!has_none_events()) {
+    disable_all();
+  }
 }
 
 void Channel::handle_events() {
