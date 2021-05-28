@@ -1,10 +1,14 @@
 CPP = g++
-CPPFLAGS = -g -std=c++17 -Wall -Wextra -O1 -fsanitize=address -fno-omit-frame-pointer
+CPPFLAGS = -I../wuduo -I../ -g -std=c++17 -Wall -Wextra -O1 -fsanitize=address -fno-omit-frame-pointer
 # -lpthread should be positioned on last
 LDFLAGS = -lgtest -lgtest_main -lpthread
 
-WuduoFiles = $(shell find ../wuduo -type f -regex '.*.cpp')
-WuduoObjects = $(shell find ../wuduo -type f -regex '.*.cpp' | sed -n \
+WuduoFiles = $(shell find ../wuduo -maxdepth 1 -type f -regex '.*.cpp')
+WuduoObjects = $(shell find ../wuduo -maxdepth 1 -type f -regex '.*.cpp' | sed -n \
+					's@.*/\(.*\)\.cpp@\./\1\.o@p')
+
+HttpFiles = $(shell find ../wuduo/http -maxdepth 1 -type f -regex '.*.cpp')
+HttpObjects = $(shell find ../wuduo/http -maxdepth 1 -type f -regex '.*.cpp' | sed -n \
 					's@.*/\(.*\)\.cpp@\./\1\.o@p')
 
 default: event_loop_test
@@ -24,8 +28,14 @@ timer_queue_test.o: %.o: ../test/timer_queue_test.cpp
 $(WuduoObjects): %.o: ../wuduo/%.cpp
 	$(CPP) $(CPPFLAGS) -o $@ -c $<
 
-server_test: $(WuduoObjects) ./server_main.o
+server_test: $(WuduoObjects) $(HttpObjects) ./server_main.o
 	$(CPP) $(CPPFLAGS) -o $@ $^ $(LDFLAGS)
+
+./server_main.o: ../test/server_main.cpp
+	$(CPP) $(CPPFLAGS) -o $@ -c $<
+
+$(HttpObjects): %.o: ../wuduo/http/%.cpp
+	$(CPP) $(CPPFLAGS) -o $@ -c $<
 
 clean:
 	rm ./*.o
