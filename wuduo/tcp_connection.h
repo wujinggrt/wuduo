@@ -4,6 +4,7 @@
 #include <utility>
 #include <string_view>
 #include <string>
+#include <any>
 
 #include "event_loop.h"
 #include "channel.h"
@@ -35,6 +36,8 @@ class TcpConnection : noncopyable,
 
    Channel* get_channel() { return &channel_; }
    EventLoop* get_loop() const { return loop_; }
+   void set_context(std::any context) { context_ = std::move(context); }
+   std::any* get_context() { return &context_; }
 
    // called only once and in this loop_, so it may be defered to established.
    // state: connecting -> connected, via server.
@@ -76,6 +79,8 @@ class TcpConnection : noncopyable,
    ConnectionCallback connection_callback_;
    MessageCallback message_callback_;
    CloseCallback close_callback_;
+
+   std::any context_;
 };
 
 }
