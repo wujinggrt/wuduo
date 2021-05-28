@@ -21,8 +21,8 @@ class TcpServer : noncopyable {
   TcpServer(EventLoop* loop, InetAddress local);
   ~TcpServer();
 
-  void set_new_connection_callback(NewConnectionCallback cb) {
-    new_connection_callback_ = std::move(cb);
+  void set_connection_callback(ConnectionCallback cb) {
+    connection_callback_ = std::move(cb);
   }
   void set_message_callback(MessageCallback cb) {
     message_callback_ = std::move(cb);
@@ -41,7 +41,7 @@ class TcpServer : noncopyable {
   InetAddress local_;
   Acceptor acceptor_;
   EventLoopThreadPool event_loop_thread_pool_;
-  NewConnectionCallback new_connection_callback_;
+  ConnectionCallback connection_callback_;
   MessageCallback message_callback_;
 
   std::unordered_set<std::shared_ptr<TcpConnection>> connections_;

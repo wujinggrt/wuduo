@@ -21,6 +21,9 @@ class TcpConnection : noncopyable,
    TcpConnection(EventLoop* loop, int sockfd, InetAddress peer);
    ~TcpConnection();
 
+   void set_connection_callback(ConnectionCallback cb) {
+     connection_callback_ = std::move(cb);
+   }
    void set_message_callback(MessageCallback cb) {
      message_callback_ = std::move(cb);
    }
@@ -47,13 +50,6 @@ class TcpConnection : noncopyable,
 
    void force_close();
 
- private:
-   // the last call to channel, then it will be destruct.
-   void destroyed();
-
-   enum State { kConnecting, kConnected, kDisconnecting, kDisconnected };
-
-   void set_state(State s) { state_ = s; }
    std::string get_state_string() {
      switch (state_) {
        case kConnecting: return "kConnecting";
@@ -64,12 +60,20 @@ class TcpConnection : noncopyable,
      }
      return "unexpected state";
    }
+ private:
+   // the last call to channel, then it will be destruct.
+   void destroyed();
+
+   enum State { kConnecting, kConnected, kDisconnecting, kDisconnected };
+
+   void set_state(State s) { state_ = s; }
 
    EventLoop* loop_;
    State state_;
    Channel channel_;
    const InetAddress peer_;
    bool reading_;
+   ConnectionCallback connection_callback_;
    MessageCallback message_callback_;
    CloseCallback close_callback_;
 };

@@ -32,13 +32,16 @@ Acceptor::Acceptor(EventLoop* loop, InetAddress local)
   LOG_INFO("Acceptor::acceptfd_ [%d]", acceptfd_);
   int on = 1;
   if (::setsockopt(acceptfd_, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on)) == -1) {
-    std::cerr << "FATAL: setsockopt(), SO_REUSEADDR\n";
+    int err = errno;
+    LOG_ERROR("setsockopt SO_REUSEADDR, [%d:%s]", err, strerror_thread_local(err));
   }
   if (::setsockopt(acceptfd_, SOL_SOCKET, SO_REUSEPORT, &on, sizeof(on)) == -1) {
-    std::cerr << "FATAL: setsockopt(), SO_REUSEPORT\n";
+    int err = errno;
+    LOG_ERROR("setsockopt SO_REUSEPORT, [%d:%s]", err, strerror_thread_local(err));
   }
   if (::bind(acceptfd_, local.get_address(), local.get_len()) == -1) {
-    std::cerr << ("Failed to bind() on socket_fd\n");
+    int err = errno;
+    LOG_ERROR("failed to bind on sockfd[%d], [%d:%s]", acceptfd_, err, strerror_thread_local(err));
   }
 }
 

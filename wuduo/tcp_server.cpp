@@ -55,6 +55,7 @@ void TcpServer::new_connection(int connection_fd, InetAddress peer) {
   auto [iter, ok] = connections_.insert(conn);
   (void) iter;
   assert(ok);
+  conn->set_connection_callback(connection_callback_);
   conn->set_message_callback(message_callback_);
   conn->set_close_callback(
       [this] (const TcpConnectionPtr& conn) { remove_connection(conn); });

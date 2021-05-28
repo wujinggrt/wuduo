@@ -38,6 +38,10 @@ void TcpConnection::established() {
   assert(state_ == kConnecting);
   set_state(kConnected);
   channel_.enable_reading();
+
+  if (connection_callback_) {
+    connection_callback_(shared_from_this());
+  }
 }
 
 // called via tcp server.
@@ -47,6 +51,9 @@ void TcpConnection::destroyed() {
     set_state(kDisconnected);
     if (!channel_.has_none_events()) {
       channel_.disable_all();
+    }
+    if (connection_callback_) {
+      connection_callback_(shared_from_this());
     }
   }
 }
@@ -117,10 +124,14 @@ void TcpConnection::handle_close() {
   if (!channel_.has_none_events()) {
     channel_.disable_all();
   }
+  auto guard_this_from_releasing = shared_from_this();
+  if (connection_callback_) {
+    connection_callback_(guard_this_from_releasing);
+  }
   // may cause dtor calling.
   if (close_callback_) {
     // may return immediately, performed by lambda in loop.
-    close_callback_(shared_from_this());
+    close_callback_(guard_this_from_releasing);
   }
 }
 
