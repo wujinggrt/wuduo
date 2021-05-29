@@ -11,7 +11,7 @@
 #include "log.h"
 
 void log_base(const char* fmt, ...) {
-  char buf[512] = "";
+  char buf[1024] = "";
   std::size_t i{0};
   std::va_list ap;
 
