@@ -6,7 +6,6 @@
 
 namespace wuduo::http {
 
-
 class RequestLine {
  public:
   enum class Method { kGet, kHead, kPost, kUnknown };

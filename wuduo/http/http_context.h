@@ -3,6 +3,7 @@
 #include <string>
 #include <string_view>
 #include <unordered_map>
+#include <optional>
 
 #include "wuduo/http/http_request.h"
 
@@ -29,9 +30,18 @@ class HttpContext {
     std::swap(in_buffer_, dummy.in_buffer_);
     std::swap(out_buffer_, dummy.out_buffer_);
     std::swap(request_line_, dummy.request_line_);
+    std::swap(headers_, dummy.headers_);
   }
 
   bool add_header(std::string_view line);
+
+  std::optional<std::string> get_header(const std::string& key) const {
+    const auto it = headers_.find(key);
+    if (it != headers_.end()) {
+      return it->second;
+    }
+    return std::nullopt;
+  }
 
  private:
   ParsingPhase phase_;

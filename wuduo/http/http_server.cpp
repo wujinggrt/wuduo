@@ -52,39 +52,6 @@ void HttpServer::on_message(const TcpConnectionPtr& conn, std::string msg) {
           conn->get_channel()->get_fd(), errno, strerror_thread_local(errno));
     }
   }
-#if 0
-  if (metadata.parsing_phase == HttpConnectionMetadata::ParsingPhase::kRequestLine) {
-    auto pos_cr_lf = msg.find('\r');
-    if (pos_cr_lf == std::string::npos) {
-      metadata.in_buffer += std::move(msg);
-      LOG_INFO("sockfd[%d] num_read[%u], wait for further read", conn->get_channel()->get_fd(), num_read);
-      return ;
-    }
-    pos_cr_lf = metadata.in_buffer.size() + pos_cr_lf;
-    metadata.in_buffer += std::move(msg);
-    auto request_line = RequestLine::from(std::string_view{metadata.in_buffer.data(), pos_cr_lf + 1});
-    if (!request_line) {
-      LOG_ERROR("Failed to parse request_line");
-      metadata.parsing_error = HttpConnectionMetadata::ParsingError::kRequestLine;
-      handle_error(conn, 400, "Bad request");
-      return ;
-    }
-    LOG_INFO("Parsed request line[%s]", RequestLine::to_string(request_line.value()).c_str());
-    metadata.request_line = request_line.value();
-    metadata.parsing_phase = HttpConnectionMetadata::ParsingPhase::kHeaderLines;
-  }
-
-  if (metadata.parsing_phase == HttpConnectionMetadata::ParsingPhase::kHeaderLines) {
-    metadata.parsing_phase = HttpConnectionMetadata::ParsingPhase::kFinished;
-    int connection_fd = conn->get_channel()->get_fd();
-    LOG_INFO("Request message(from[%d]):\n%sResponse:\n%s", 
-        connection_fd, metadata.in_buffer.c_str(), kHelloWorld.data());
-    if (::write(connection_fd, kHelloWorld.data(), kHelloWorld.size()) == -1) {
-      LOG_ERROR("sockfd[%d] failed to write [%d:%s]", connection_fd, errno, strerror_thread_local(errno));
-    }
-    LOG_INFO("sockfd[%d] - Message responded", connection_fd);
-  }
-#endif
 }
 
 void HttpServer::handle_error(const TcpConnectionPtr& conn, int error_code, std::string_view short_msg) {

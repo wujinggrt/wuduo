@@ -35,24 +35,15 @@ bool HttpContext::parse_request(std::string msg) {
     }
 
     std::string_view line{in_buffer_.data(), pos_cr_lf};
-    const auto pos_colon = line.find(':');
-    if (pos_colon == std::string_view::npos) {
+    if (line.empty()) {
       // blank line, only preceding \r\n
       // TODO: parse entity body.
       phase_ = ParsingPhase::kCompleted;
       return true;
     }
-
-    const auto pos_value = line.find_first_not_of(' ', pos_colon + 1);
-    if (pos_value == std::string_view::npos) {
-      // may matche next line.
-      LOG_ERROR("failed to parse header's value");
+    if (!add_header(line)) {
       return false;
     }
-    std::string key{line.substr(0, pos_colon)};
-    std::string value{line.substr(pos_value)};
-    LOG_DEBUG("parsed header: [%s, %s]", key.c_str(), value.c_str());
-    headers_.emplace(std::move(key), std::move(value));
 
     assert((pos_cr_lf + 2) <= in_buffer_.size());
     in_buffer_ = in_buffer_.substr(pos_cr_lf + 2);
@@ -64,12 +55,21 @@ bool HttpContext::parse_request(std::string msg) {
 }
 
 bool HttpContext::add_header(std::string_view line) {
-  auto pos_colon = line.find(':');
+  const auto pos_colon = line.find(':');
   if (pos_colon == std::string_view::npos) {
-    // blank line.
+    LOG_ERROR("failed to parse header's value");
     return false;
   }
-  return true;
+  const auto pos_value = line.find_first_not_of(' ', pos_colon + 1);
+  if (pos_value == std::string_view::npos) {
+    // may matche next line.
+    LOG_ERROR("failed to parse header's value");
+    return false;
+  }
+  std::string key{line.substr(0, pos_colon)};
+  std::string value{line.substr(pos_value)};
+  LOG_DEBUG("parsed header: [%s, %s]", key.c_str(), value.c_str());
+  return headers_.emplace(std::move(key), std::move(value)).second;
 }
 
 }
