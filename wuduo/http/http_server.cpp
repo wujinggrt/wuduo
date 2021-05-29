@@ -9,9 +9,11 @@
 #include "wuduo/http/http_server.h"
 #include "wuduo/http/http_request.h"
 #include "wuduo/http/http_context.h"
+#include "wuduo/http/http_response.h"
 #include "wuduo/tcp_connection.h"
 #include "wuduo/log.h"
 #include "wuduo/util.h"
+#include "wuduo/buffer.h"
 
 namespace wuduo::http {
 
@@ -43,14 +45,32 @@ void HttpServer::on_message(const TcpConnectionPtr& conn, std::string msg) {
   LOG_INFO("sockfd[%d] num_read[%d], contents:\n%s", conn->get_channel()->get_fd(), num_read, msg.c_str());
 
   if (!context->parse_request(msg)) {
+#if 1
+    HttpResponse response;
+    response.set_status_code(StatusCode::k400BadRequest);
+#endif
     handle_error(conn, 400, "Bad request");
   }
 
   if (context->is_parsing_completed()) {
-    if (::write(conn->get_channel()->get_fd(), kHelloWorld.data(), kHelloWorld.size()) == -1) {
+#if 1
+    HttpResponse response;
+    response.set_status_code(StatusCode::k200Ok);
+#endif
+    response.set_entity_body(std::string{kHelloWorld});
+    auto response_msg = response.get_response_message();
+    Buffer buf;
+    buf.append(response_msg.data(), response_msg.size());
+#if 1
+    LOG_DEBUG("buf.readable_bytes()[%d], writable_bytes[%d]", buf.readable_bytes(), buf.writable_bytes());
+    if (::write(conn->get_channel()->get_fd(), buf.peek(), buf.readable_bytes()) == -1) {
+#else
+    if (::write(conn->get_channel()->get_fd(), response_msg.c_str(), response_msg.size()) == -1) {
+#endif
       LOG_ERROR("sockfd[%d] failed to write [%d:%s]", 
           conn->get_channel()->get_fd(), errno, strerror_thread_local(errno));
     }
+    context->reset();
   }
 }
 

@@ -25,30 +25,21 @@ class HttpContext {
   }
 
   void reset() {
+    using std::swap;
     phase_ = ParsingPhase::kRequestLine;
     HttpContext dummy;
     std::swap(in_buffer_, dummy.in_buffer_);
     std::swap(out_buffer_, dummy.out_buffer_);
-    std::swap(request_line_, dummy.request_line_);
-    std::swap(headers_, dummy.headers_);
+    request_.swap(dummy.request_);
   }
 
-  bool add_header(std::string_view line);
-
-  std::optional<std::string> get_header(const std::string& key) const {
-    const auto it = headers_.find(key);
-    if (it != headers_.end()) {
-      return it->second;
-    }
-    return std::nullopt;
-  }
+  HttpRequest* get_request() { return &request_; }
 
  private:
   ParsingPhase phase_;
   std::string in_buffer_;
   std::string out_buffer_;
-  RequestLine request_line_;
-  std::unordered_map<std::string, std::string> headers_;
+  HttpRequest request_;
 };
 
 }

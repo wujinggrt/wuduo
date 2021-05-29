@@ -1,6 +1,7 @@
 #include "cassert"
 
-#include "http_request.h"
+#include "wuduo/http/http_request.h"
+#include "wuduo/log.h"
 
 namespace wuduo::http {
 
@@ -33,11 +34,11 @@ std::optional<RequestLine> RequestLine::from(std::string_view method,
   RequestLine ret;
 
   if (method == "GET") {
-    ret.method = RequestLine::Method::kGet;
+    ret.method = Method::kGet;
   } else if (method == "HEAD") {
-    ret.method = RequestLine::Method::kHead;
+    ret.method = Method::kHead;
   } else if (method == "POST") {
-    ret.method = RequestLine::Method::kPost;
+    ret.method = Method::kPost;
   } else {
     return std::nullopt;
   }
@@ -51,9 +52,9 @@ std::optional<RequestLine> RequestLine::from(std::string_view method,
   ret.url = std::string{url};
 
   if (version == "HTTP/1.0") {
-    ret.version = RequestLine::Version::kHttp10;
+    ret.version = Version::kHttp10;
   } else if (version == "HTTP/1.1") {
-    ret.version = RequestLine::Version::kHttp11;
+    ret.version = Version::kHttp11;
   } else {
     return std::nullopt;
   }
@@ -65,21 +66,48 @@ std::string RequestLine::to_string(const RequestLine& line) {
   std::string ret;
 
   switch (line.method) {
-    case RequestLine::Method::kGet: ret += "GET"; break;
-    case RequestLine::Method::kHead: ret += "HEAD"; break;
-    case RequestLine::Method::kPost: ret += "POST"; break;
+    case Method::kGet: ret += "GET"; break;
+    case Method::kHead: ret += "HEAD"; break;
+    case Method::kPost: ret += "POST"; break;
     default: ret += "UNKNOWN"; break;
   }
 
   ret += " " + line.url + " ";
 
   switch (line.version) {
-    case RequestLine::Version::kHttp10: ret += "HTTP/1.0"; break;
-    case RequestLine::Version::kHttp11: ret += "HTTP/1.1"; break;
+    case Version::kHttp10: ret += "HTTP/1.0"; break;
+    case Version::kHttp11: ret += "HTTP/1.1"; break;
     default: ret += "UNKNOWN VERSION";
   }
 
   return ret;
+}
+
+bool HttpRequest::set_request_line_from(std::string_view line) {
+  auto request_line = RequestLine::from(line);
+  if (request_line.has_value()) {
+    request_line_ = std::move(request_line.value());
+    return true;
+  }
+  return false;
+}
+
+bool HttpRequest::add_header_from(std::string_view line) {
+  const auto pos_colon = line.find(':');
+  if (pos_colon == std::string_view::npos) {
+    LOG_ERROR("failed to parse header's value");
+    return false;
+  }
+  const auto pos_value = line.find_first_not_of(' ', pos_colon + 1);
+  if (pos_value == std::string_view::npos) {
+    // may matche next line.
+    LOG_ERROR("failed to parse header's value");
+    return false;
+  }
+  std::string key{line.substr(0, pos_colon)};
+  std::string value{line.substr(pos_value)};
+  LOG_DEBUG("parsed header: [%s, %s]", key.c_str(), value.c_str());
+  return headers_.emplace(std::move(key), std::move(value)).second;
 }
 
 }

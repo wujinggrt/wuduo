@@ -16,12 +16,6 @@
 
 namespace wuduo::http {
 
-[[maybe_unused]] constexpr const std::string_view kHelloWorld =
-  "HTTP/1.1 200 OK\r\nContent-Type: text/html;charset=utf-8 \r\n\r\nHello wOrld!";
-
-[[maybe_unused]] constexpr const std::string_view kBadRequest =
-  "HTTP/1.1 400 Bad Request\r\nContent-Type: text/html;charset=utf-8 \r\n\r\n";
-
 struct HttpConnectionMetadata {
   enum class ParsingPhase { kRequestLine, kHeaderLines, kEntityBody, kFinished };
   enum class ParsingError { kCorrect, kRequestLine, kHeaderLine, kEntityBody, kUnknown };
