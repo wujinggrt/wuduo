@@ -58,6 +58,8 @@ class HttpResponse {
     entity_body_ = std::move(body);
   }
 
+  void set_error_page_to_entity_body();
+
   bool close_connection() const { return close_connection_; }
   void set_close_connection(bool close_connection) { close_connection_ = close_connection; }
 

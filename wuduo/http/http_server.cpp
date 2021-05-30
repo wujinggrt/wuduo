@@ -21,7 +21,6 @@ HttpServer::HttpServer(EventLoop* loop, InetAddress address)
 {
   server_.set_connection_callback([] (const TcpConnectionPtr& conn) {
     if (conn->is_connected()) {
-      LOG_DEBUG("setting context");
       conn->set_context(std::make_any<HttpContext>());
       LOG_DEBUG("setting context completed");
     }
@@ -47,7 +46,12 @@ void HttpServer::on_message(const TcpConnectionPtr& conn, Buffer* buf) {
   if (!context->parse_request(buf)) {
     HttpResponse response;
     response.set_status_code(StatusCode::k400BadRequest);
-    handle_error(conn, 400, "Bad request");
+    response.set_error_page_to_entity_body();
+    Buffer buf;
+    response.append_to(&buf);
+    conn->send(buf.peek(), buf.readable_bytes());
+    conn->shutdown();
+    //handle_error(conn, 400, "Bad request");
   }
 
   if (context->parsing_completed()) {
@@ -60,7 +64,6 @@ void HttpServer::on_message(const TcpConnectionPtr& conn, Buffer* buf) {
     response.set_entity_body(std::string{kHelloWorld});
     Buffer buf;
     response.append_to(&buf);
-    LOG_DEBUG("buf.readable_bytes()[%d], writable_bytes[%d]", buf.readable_bytes(), buf.writable_bytes());
     conn->send(buf.peek(), buf.readable_bytes());
     if (response.close_connection()) {
       // should be shutdown

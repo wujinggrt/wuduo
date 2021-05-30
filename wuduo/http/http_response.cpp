@@ -16,6 +16,20 @@ std::string to_string(StatusCode code) {
   return "Unknown";
 }
 
+void HttpResponse::set_error_page_to_entity_body() {
+  Buffer buf;
+  buf.append("<html><title>出错了~</title>");
+  buf.append("<body><h1>ERROR<hr /></h1><p>");
+  std::string error_code = std::to_string(static_cast<int>(status_code_));
+  buf.append(std::string_view{error_code});
+  buf.append(", ");
+  buf.append(phrase_);
+  buf.append("</p></body></html>");
+
+  set_entity_body(std::string{buf.peek(), buf.readable_bytes()});
+  buf.retrieve_all();
+}
+
 std::string HttpResponse::response_message() const {
   std::string ret;
   char buf[32];
