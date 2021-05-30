@@ -11,8 +11,9 @@
 #include <sys/timerfd.h>
 #include <unistd.h>
 
-#include "timer_queue.h"
-#include "event_loop.h"
+#include "wuduo/timer_queue.h"
+#include "wuduo/event_loop.h"
+#include "wuduo/log.h"
 
 namespace wuduo {
 
@@ -26,6 +27,7 @@ TimerQueue::TimerQueue(EventLoop* loop)
   }
   channel_.set_read_callback([this]{ handle_read(); });
   channel_.enable_reading();
+  LOG_INFO("timer_fd[%d] enabled reading", timerfd_);
 }
 
 TimerQueue::~TimerQueue() {

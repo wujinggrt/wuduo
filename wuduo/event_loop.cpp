@@ -41,6 +41,7 @@ EventLoop::EventLoop()
       }
   });
   wakeup_channel_.enable_reading();
+  LOG_INFO("eventfd[%d] wakeup fd enabled reading", wakeupfd_);
 }
 
 // wakeup_channel_ will disable_all and remove from epoller.

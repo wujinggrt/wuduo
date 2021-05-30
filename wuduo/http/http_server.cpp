@@ -49,7 +49,8 @@ void HttpServer::on_message(const TcpConnectionPtr& conn, Buffer* buf) {
     response.set_error_page_to_entity_body();
     Buffer buf;
     response.append_to(&buf);
-    conn->send(buf.peek(), buf.readable_bytes());
+    // conn->send(buf.peek(), buf.readable_bytes());
+    conn->send(&buf);
     conn->shutdown();
     //handle_error(conn, 400, "Bad request");
   }

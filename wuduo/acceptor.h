@@ -21,6 +21,8 @@ class Acceptor {
   }
 
  private:
+  void on_incoming_connection();
+
   EventLoop* loop_;
   const int acceptfd_;
   bool listening_;

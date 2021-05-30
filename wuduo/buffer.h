@@ -66,6 +66,12 @@ class Buffer {
     writer_index_ = kCheapPrepend;
   }
 
+  std::string retrieve_all_as_string() {
+    std::string ret{peek(), readable_bytes()};
+    retrieve_all();
+    return ret;
+  }
+
   void append(std::string_view str) {
     append(str.data(), str.size());
   }

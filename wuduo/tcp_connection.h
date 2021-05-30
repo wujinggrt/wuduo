@@ -46,6 +46,8 @@ class TcpConnection : noncopyable,
    void send(std::string_view data);
    void send(Buffer* buf);
    void send(const char* data, size_t count);
+   // the life time of data should be guaranteed by called.
+   void send_in_loop(const char* data, size_t count);
 
    void handle_read();
    void handle_write();

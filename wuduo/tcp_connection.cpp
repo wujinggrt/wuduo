@@ -32,6 +32,7 @@ void TcpConnection::established() {
   assert(state_ == kConnecting);
   set_state(kConnected);
   channel_.enable_reading();
+  LOG_INFO("sockfd[%d] enabled reading", channel_.get_fd());
 
   if (connection_callback_) {
     connection_callback_(shared_from_this());
@@ -57,40 +58,60 @@ void TcpConnection::send(Buffer* buf) {
   if (state_ != kConnected) {
     return ;
   }
-  (void) buf;
+  if (loop_->in_loop_thread()) {
+    send_in_loop(buf->peek(), buf->readable_bytes());
+    buf->retrieve_all();
+    return ;
+  }
+  loop_->run_in_loop([this, message_will_not_release = buf->retrieve_all_as_string()] {
+    send_in_loop(message_will_not_release.data(), message_will_not_release.size());
+  });
 }
 
 void TcpConnection::send(const char* data, size_t count) {
-  loop_->run_in_loop([this, data, count] {
-    if (state_ == kDisconnected) {
-      LOG_WARN("disconnected, give up writing");
-      return ;
-    }
-    ssize_t num_wrote = 0;
-    // it is ok to write directly now, no pending write.
-    if (!channel_.is_writing() && (output_buffer_.readable_bytes() == 0)) {
-      num_wrote = ::write(channel_.get_fd(), data, count);
-      if (num_wrote >= 0) {
-        if (static_cast<size_t>(num_wrote) < count) {
-          LOG_DEBUG("write more data");
-        }
-      } else {
-        // error, pending contents to buffer.
-        num_wrote = 0;
-        if ((errno != EWOULDBLOCK) || (errno != EAGAIN)) {
-          LOG_ERROR("unexpected write, [%d:%s]", errno, strerror_thread_local(errno));
-        }
-      }
-    }
-    assert(num_wrote >= 0);
-    if (static_cast<size_t>(num_wrote) < count) {
-      // pending write.
-      output_buffer_.append(data + num_wrote, count - num_wrote);
-      if (!channel_.is_writing()) {
-        channel_.enable_writing();
-      }
-    }
+  if (state_ != kConnected) {
+    return ;
+  }
+  if (loop_->in_loop_thread()) {
+    send_in_loop(data, count);
+    return ;
+  }
+  // avoid from buffer has released. just copyed it.
+  loop_->run_in_loop([this, saved_from_buffer = std::string{data, count}] {
+      send_in_loop(saved_from_buffer.data(), saved_from_buffer.size());
   });
+}
+
+void TcpConnection::send_in_loop(const char* data, size_t count) {
+  loop_->assert_in_loop_thread();
+  if (state_ == kDisconnected) {
+    LOG_WARN("disconnected, give up writing");
+    return ;
+  }
+  ssize_t num_wrote = 0;
+  // it is ok to write directly now, no pending write.
+  if (!channel_.is_writing() && (output_buffer_.readable_bytes() == 0)) {
+    num_wrote = ::write(channel_.get_fd(), data, count);
+    if (num_wrote >= 0) {
+      if (static_cast<size_t>(num_wrote) < count) {
+        LOG_DEBUG("write more data");
+      }
+    } else {
+      // error, pending contents to buffer.
+      num_wrote = 0;
+      if ((errno != EWOULDBLOCK) || (errno != EAGAIN)) {
+        LOG_ERROR("unexpected write, [%d:%s]", errno, strerror_thread_local(errno));
+      }
+    }
+  }
+  assert(num_wrote >= 0);
+  if (static_cast<size_t>(num_wrote) < count) {
+    // pending write.
+    output_buffer_.append(data + num_wrote, count - num_wrote);
+    if (!channel_.is_writing()) {
+      channel_.enable_writing();
+    }
+  }
 }
 
 void TcpConnection::handle_read() {
