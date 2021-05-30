@@ -6,18 +6,18 @@
 #include <string>
 #include <any>
 
-#include "event_loop.h"
-#include "channel.h"
-#include "inet_address.h"
-#include "noncopyable.h"
-#include "callbacks.h"
+#include "wuduo/event_loop.h"
+#include "wuduo/channel.h"
+#include "wuduo/inet_address.h"
+#include "wuduo/buffer.h"
+#include "wuduo/noncopyable.h"
+#include "wuduo/callbacks.h"
 
 namespace wuduo {
 
 class TcpConnection : noncopyable, 
                       public std::enable_shared_from_this<TcpConnection> {
     friend class TcpServer;
-    friend class HttpServer;
  public:
    TcpConnection(EventLoop* loop, int sockfd, InetAddress peer);
    ~TcpConnection();
@@ -79,7 +79,8 @@ class TcpConnection : noncopyable,
    ConnectionCallback connection_callback_;
    MessageCallback message_callback_;
    CloseCallback close_callback_;
-
+   Buffer in_buffer_;
+   Buffer out_buffer_;
    std::any context_;
 };
 

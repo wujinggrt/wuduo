@@ -8,12 +8,6 @@
 #include "log.h"
 #include "util.h"
 
-namespace {
-
-[[maybe_unused]]constexpr const size_t kReadBufferSize = 10;
-
-}
-
 namespace wuduo {
 
 TcpConnection::TcpConnection(EventLoop* loop, int sockfd, InetAddress peer)
@@ -61,52 +55,25 @@ void TcpConnection::destroyed() {
 void TcpConnection::handle_read() {
   loop_->assert_in_loop_thread();
   auto fd = channel_.get_fd();
-  char buf[kReadBufferSize] = "";
-  std::string msg;
-  msg.reserve(kReadBufferSize);
   LOG_DEBUG("sockfd[%d] Handling read", channel_.get_fd());
-  for (;;) {
-    // if the epoller use edge-triggered, read should called until return -1
-    auto num_read = ::read(fd, buf, sizeof(buf));
-    LOG_DEBUG("sockfd[%d] read num[%d]", fd, num_read);
-    if (num_read > 0) {
-      msg += std::string{buf, static_cast<std::string::size_type>(num_read)};
-      if (num_read < static_cast<decltype(num_read)>(sizeof(buf))) {
-        // save once system call.
-        if (message_callback_) {
-          message_callback_(shared_from_this(), std::move(msg));
-        }
-        return ;
-      }
-    } else if (num_read == 0) {
-      //Bug: when pervious read full buffer, but this time, the read returns 0.
-      // the msg is not empty, the message_callback_ does not recognize the close of peer.
-      if (message_callback_) {
-        if (msg.empty()) {
-          message_callback_(shared_from_this(), std::move(msg));
-        } else {
-          message_callback_(shared_from_this(), std::move(msg));
-          // empty string to indicates peer close to notify callback.
-          message_callback_(shared_from_this(), std::string{});
-        }
-      }
-      set_state(kDisconnecting);
-      LOG_INFO("sockfd[%d] Peer closed", channel_.get_fd());
-      handle_close();
-      return ;
-    } else if (num_read == -1) {
-      // ends here.
-      if (int saved_errno = errno;
-          (saved_errno == EAGAIN) || (saved_errno == EWOULDBLOCK)) {
-        // the last read number of buffer size is all the last contents.
-        if (message_callback_) {
-          message_callback_(shared_from_this(), std::move(msg));
-        }
-      } else {
-        LOG_ERROR("::read() [%d:%s]", saved_errno, strerror_thread_local(saved_errno));
-        handle_error();
-      }
-      return ;
+  // if the epoller use edge-triggered, read should called until return -1
+  int saved_errno = 0;
+  auto num_read = in_buffer_.read_fd(fd, &saved_errno);
+  LOG_DEBUG("sockfd[%d] read num[%d]", fd, num_read);
+  if (num_read > 0) {
+    if (message_callback_) {
+      message_callback_(shared_from_this(), &in_buffer_);
+    }
+  } else if (num_read == 0) {
+    set_state(kDisconnecting);
+    LOG_INFO("sockfd[%d] Peer closed", channel_.get_fd());
+    handle_close();
+    return ;
+  } else if (num_read == -1) {
+    // ends here.
+    if ((saved_errno != EAGAIN) && (saved_errno != EWOULDBLOCK)) {
+      LOG_ERROR("::read() [%d:%s]", saved_errno, strerror_thread_local(saved_errno));
+      handle_error();
     }
   }
 }

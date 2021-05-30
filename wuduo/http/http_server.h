@@ -13,6 +13,7 @@
 #include "wuduo/event_loop.h"
 #include "wuduo/tcp_server.h"
 #include "wuduo/callbacks.h"
+#include "wuduo/buffer.h"
 
 namespace wuduo::http {
 
@@ -35,7 +36,7 @@ class HttpServer : noncopyable {
   void start();
 
  private:
-  void on_message(const TcpConnectionPtr& conn, std::string msg);
+  void on_message(const TcpConnectionPtr& conn, Buffer* buf);
 
   void handle_error(const TcpConnectionPtr& conn, int error_code, std::string_view short_msg);
 

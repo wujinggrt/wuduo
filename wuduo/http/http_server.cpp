@@ -13,7 +13,6 @@
 #include "wuduo/tcp_connection.h"
 #include "wuduo/log.h"
 #include "wuduo/util.h"
-#include "wuduo/buffer.h"
 
 namespace wuduo::http {
 
@@ -27,8 +26,8 @@ HttpServer::HttpServer(EventLoop* loop, InetAddress address)
       LOG_DEBUG("setting context completed");
     }
   });
-  server_.set_message_callback([this] (const auto& conn, auto msg) {
-    on_message(conn, std::move(msg));
+  server_.set_message_callback([this] (const auto& conn, Buffer* buf) {
+    on_message(conn, buf);
   });
 }
 
@@ -36,12 +35,13 @@ void HttpServer::start() {
   server_.start();
 }
 
-void HttpServer::on_message(const TcpConnectionPtr& conn, std::string msg) {
+void HttpServer::on_message(const TcpConnectionPtr& conn, Buffer* buf) {
   // can be called only in io_loop of the corresponding conn.
   // EOF, peer closed.
   HttpContext* context = std::any_cast<HttpContext>(conn->get_context());
 
-  auto num_read = msg.size();
+  auto num_read = buf->readable_bytes();
+  std::string msg{buf->peek(), num_read};
   LOG_INFO("sockfd[%d] num_read[%d], contents:\n%s", conn->get_channel()->get_fd(), num_read, msg.c_str());
 
   if (!context->parse_request(msg)) {
