@@ -15,3 +15,5 @@ void log_base(const char* fmt, ...);
 #define LOG_INFO(fmt, ...) BASIC_LOG("\033[38;2;0;255;0mINFO\033[0m", fmt, ##__VA_ARGS__)
 
 #define LOG_DEBUG(fmt, ...) BASIC_LOG("DEBUG", fmt, ##__VA_ARGS__)
+
+#define LOG_TRACE(fmt, ...) BASIC_LOG("TRACE", fmt, ##__VA_ARGS__)

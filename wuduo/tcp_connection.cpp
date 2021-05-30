@@ -53,6 +53,46 @@ void TcpConnection::destroyed() {
   }
 }
 
+void TcpConnection::send(Buffer* buf) {
+  if (state_ != kConnected) {
+    return ;
+  }
+  (void) buf;
+}
+
+void TcpConnection::send(const char* data, size_t count) {
+  loop_->run_in_loop([this, data, count] {
+    if (state_ == kDisconnected) {
+      LOG_WARN("disconnected, give up writing");
+      return ;
+    }
+    ssize_t num_wrote = 0;
+    // it is ok to write directly now, no pending write.
+    if (!channel_.is_writing() && (output_buffer_.readable_bytes() == 0)) {
+      num_wrote = ::write(channel_.get_fd(), data, count);
+      if (num_wrote >= 0) {
+        if (static_cast<size_t>(num_wrote) < count) {
+          LOG_DEBUG("write more data");
+        }
+      } else {
+        // error, pending contents to buffer.
+        num_wrote = 0;
+        if ((errno != EWOULDBLOCK) || (errno != EAGAIN)) {
+          LOG_ERROR("unexpected write, [%d:%s]", errno, strerror_thread_local(errno));
+        }
+      }
+    }
+    assert(num_wrote >= 0);
+    if (static_cast<size_t>(num_wrote) < count) {
+      // pending write.
+      output_buffer_.append(data + num_wrote, count - num_wrote);
+      if (!channel_.is_writing()) {
+        channel_.enable_writing();
+      }
+    }
+  });
+}
+
 void TcpConnection::handle_read() {
   loop_->assert_in_loop_thread();
   auto fd = channel_.get_fd();
@@ -79,6 +119,24 @@ void TcpConnection::handle_read() {
 
 void TcpConnection::handle_write() {
   loop_->assert_in_loop_thread();
+  if (channel_.is_writing()) {
+    auto num_wrote = ::write(channel_.get_fd(), output_buffer_.peek(), output_buffer_.readable_bytes());
+    if (num_wrote > 0) {
+      output_buffer_.retrieve(num_wrote);
+      if (output_buffer_.readable_bytes() == 0) {
+        channel_.disable_writing();
+      }
+      // after sending all write, it is ok to do the previous ask of shutdown.
+      if (state_ == kDisconnecting) {
+        shutdown();
+      }
+    } else {
+      int err = errno;
+      LOG_ERROR("::write(sockfd[%d])", channel_.get_fd(), err, strerror_thread_local(err));
+    }
+  } else {
+    LOG_TRACE("sockfd[%d]:No more writing", channel_.get_fd());
+  }
 }
 
 void TcpConnection::handle_close() {
@@ -114,7 +172,24 @@ void TcpConnection::force_close() {
         handle_close();
       }
     });
+  }
 }
+
+void TcpConnection::shutdown() {
+  if (state_ == kConnected) {
+    set_state(kDisconnecting);
+    loop_->run_in_loop([this] {
+      if (channel_.is_writing()) {
+        // we have pending write task.
+        return ;
+      }
+      if (::shutdown(channel_.get_fd(), SHUT_WR) == -1) {
+        int err = errno;
+        LOG_ERROR("sockfd[%d] failed to shutdown write, [%d:%s]", 
+            err, strerror_thread_local(err));
+      }
+    });
+  }
 }
 
 }

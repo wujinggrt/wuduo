@@ -51,16 +51,22 @@ void HttpServer::on_message(const TcpConnectionPtr& conn, Buffer* buf) {
   }
 
   if (context->parsing_completed()) {
-    HttpResponse response;
+    auto* request = context->request();
+    auto connection = request->get_header("Connection");
+    const bool close_connection = (connection == "close") ||
+      (request->get_version() == Version::kHttp10 && connection != "Keep-Alive");
+    HttpResponse response{close_connection};
     response.set_status_code(StatusCode::k200Ok);
     response.set_entity_body(std::string{kHelloWorld});
     Buffer buf;
     response.append_to(&buf);
     LOG_DEBUG("buf.readable_bytes()[%d], writable_bytes[%d]", buf.readable_bytes(), buf.writable_bytes());
-    if (::write(conn->channel()->get_fd(), buf.peek(), buf.readable_bytes()) == -1) {
-      LOG_ERROR("sockfd[%d] failed to write [%d:%s]", 
-          conn->channel()->get_fd(), errno, strerror_thread_local(errno));
+    conn->send(buf.peek(), buf.readable_bytes());
+    if (response.close_connection()) {
+      // should be shutdown
+      conn->shutdown();
     }
+    // TODO, reset context, reset the received buf.
     context->reset();
   }
 }

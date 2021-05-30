@@ -6,10 +6,13 @@
 namespace wuduo::http {
 
 bool HttpContext::parse_request(Buffer* buf) {
+#if 0
   if (buf->readable_bytes() == 0) {
     // wait further data.
+    LOG_TRACE("Nothing to parse");
     return true;
   }
+#endif
   if (phase_ == ParsingPhase::kRequestLine) {
     std::string_view messages{buf->peek(), buf->readable_bytes()};
     const auto pos_cr_lf = messages.find("\r\n");
@@ -37,9 +40,10 @@ bool HttpContext::parse_request(Buffer* buf) {
     std::string_view line{messages.data(), pos_cr_lf};
     if (line.empty()) {
       // blank line, only preceding \r\n
-      // TODO: parse entity body.
-      phase_ = ParsingPhase::kCompleted;
-      return true;
+      assert(pos_cr_lf == 0);
+      phase_ = ParsingPhase::kEntityBody;
+      buf->retrieve(2);
+      return parse_request(buf);
     }
     if (!request_.add_header_from(line)) {
       return false;
@@ -48,8 +52,10 @@ bool HttpContext::parse_request(Buffer* buf) {
     assert(buf->readable_bytes() >= (pos_cr_lf + 2));
     buf->retrieve(pos_cr_lf + 2);
     return parse_request(buf);
-  } else {
+  } else if (phase_ == ParsingPhase::kEntityBody) {
     // TODO: parse entity body.
+    buf->retrieve_all();
+    phase_ = ParsingPhase::kCompleted;
   }
   return true;
 }

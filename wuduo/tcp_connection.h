@@ -43,7 +43,9 @@ class TcpConnection : noncopyable,
    // state: connecting -> connected, via server.
    void established();
 
-   void send_in_loop(std::string_view data);
+   void send(std::string_view data);
+   void send(Buffer* buf);
+   void send(const char* data, size_t count);
 
    void handle_read();
    void handle_write();
@@ -52,6 +54,8 @@ class TcpConnection : noncopyable,
    void handle_error();
 
    void force_close();
+
+   void shutdown();
 
    std::string get_state_string() {
      switch (state_) {
@@ -80,7 +84,7 @@ class TcpConnection : noncopyable,
    MessageCallback message_callback_;
    CloseCallback close_callback_;
    Buffer in_buffer_;
-   Buffer out_buffer_;
+   Buffer output_buffer_;
    std::any context_;
 };
 

@@ -22,8 +22,9 @@ std::optional<RequestLine> RequestLine::from(std::string_view line) {
       return std::nullopt;
   }
   std::string_view url = line.substr(0, space_pos);
-  line.remove_prefix(space_pos + 1);
+
   assert(space_pos + 1 < line.size());
+  line.remove_prefix(space_pos + 1);
 
   return RequestLine::from(method, url, line);
 }

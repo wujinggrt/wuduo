@@ -7,7 +7,7 @@ import sys
 error = False
 
 bad_request = 'ET / HTTP/1.1\r\n\r\n'
-correct_sentence = 'GET / HTTP/1.1\r\n\r\n'
+correct_sentence = 'GET / HTTP/1.1\r\nClient: python\r\n\r\n'
 #correct_sentence = bad_request
 
 def client_request(num, sentence):
