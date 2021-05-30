@@ -18,8 +18,8 @@ namespace wuduo::http {
   //"HTTP/1.1 200 OK\r\nContent-Type: text/html;charset=utf-8 \r\n\r\nHello wOrld!";
   "Hello world";
 
-[[maybe_unused]] constexpr const std::string_view kBadRequest =
-  "HTTP/1.1 400 Bad Request\r\nContent-Type: text/html;charset=utf-8 \r\n\r\n";
+[[maybe_unused]] constexpr const std::string_view kIndexPage =
+  "<html><body><p>Index page</p><a href=\"./hello.html\">Hello world!</a></body></html>";
 
 enum class StatusCode {
   k200Ok = 200,
@@ -38,8 +38,8 @@ class HttpResponse {
     phrase_{"Not Found"},
     close_connection_{close_connection}
   {
-    headers_["Content-Type"] = "text/html;charset=utf-8";
     set_close_connection(close_connection);
+    set_content_type("text/html;charset=utf-8");
   }
 
   void set_status_code(StatusCode code) {
@@ -53,6 +53,10 @@ class HttpResponse {
 
   void add_header(std::string key, std::string value) {
     headers_[key] = std::move(value);
+  }
+
+  void set_content_type(std::string content_type) {
+    add_header("Content-Type", std::move(content_type));
   }
 
   void set_entity_body(std::string body) {

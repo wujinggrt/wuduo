@@ -1,5 +1,10 @@
 #include <cstring>
 
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
 #include "wuduo/http/http_response.h"
 #include "wuduo/buffer.h"
 
@@ -78,7 +83,29 @@ void HttpResponse::append_to(Buffer* output) const {
 void HttpResponse::analyse(HttpRequest* request) {
   set_close_connection(request->is_close_connection());
   if (request->path() == "index.html") {
+    set_entity_body(std::string{kIndexPage});
+  } else if (request->path() == "hello.html") {
     set_entity_body(std::string{kHelloWorld});
+  } if (request->path() == "favicon.ico") {
+    set_content_type("image/png");
+
+    auto fd = ::open(request->path().c_str(), O_RDONLY | O_CLOEXEC);
+    if (fd == -1) {
+      set_status_code(StatusCode::k404NotFound);
+      set_content_type("text/html;charset=utf-8");
+      set_error_page_to_entity_body();
+      return ;
+    }
+    Buffer buf;
+    auto num_read = buf.read_fd(fd);
+    ::close(fd);
+    if (num_read < 0) {
+      set_status_code(StatusCode::k404NotFound);
+      set_content_type("text/html;charset=utf-8");
+      set_error_page_to_entity_body();
+      return ;
+    }
+    set_entity_body(std::string{buf.peek(), buf.readable_bytes()});
   }
 }
 

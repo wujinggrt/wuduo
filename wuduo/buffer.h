@@ -105,7 +105,7 @@ class Buffer {
     if (writable_bytes() < count) {
       make_space(count);
     }
-    assert(writable_bytes() > count);
+    assert(writable_bytes() >= count);
   }
 
   void shrink_to_fit() {
