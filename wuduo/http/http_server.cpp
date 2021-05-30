@@ -38,37 +38,29 @@ void HttpServer::start() {
 void HttpServer::on_message(const TcpConnectionPtr& conn, Buffer* buf) {
   // can be called only in io_loop of the corresponding conn.
   // EOF, peer closed.
-  HttpContext* context = std::any_cast<HttpContext>(conn->get_context());
+  HttpContext* context = std::any_cast<HttpContext>(conn->context());
 
   auto num_read = buf->readable_bytes();
   std::string msg{buf->peek(), num_read};
-  LOG_INFO("sockfd[%d] num_read[%d], contents:\n%s", conn->get_channel()->get_fd(), num_read, msg.c_str());
+  LOG_INFO("sockfd[%d] num_read[%d], contents:\n%s", conn->channel()->get_fd(), num_read, msg.c_str());
 
-  if (!context->parse_request(msg)) {
-#if 1
+  if (!context->parse_request(buf)) {
     HttpResponse response;
     response.set_status_code(StatusCode::k400BadRequest);
-#endif
     handle_error(conn, 400, "Bad request");
   }
 
-  if (context->is_parsing_completed()) {
-#if 1
+  if (context->parsing_completed()) {
     HttpResponse response;
     response.set_status_code(StatusCode::k200Ok);
-#endif
     response.set_entity_body(std::string{kHelloWorld});
     auto response_msg = response.get_response_message();
     Buffer buf;
     buf.append(response_msg.data(), response_msg.size());
-#if 1
     LOG_DEBUG("buf.readable_bytes()[%d], writable_bytes[%d]", buf.readable_bytes(), buf.writable_bytes());
-    if (::write(conn->get_channel()->get_fd(), buf.peek(), buf.readable_bytes()) == -1) {
-#else
-    if (::write(conn->get_channel()->get_fd(), response_msg.c_str(), response_msg.size()) == -1) {
-#endif
+    if (::write(conn->channel()->get_fd(), buf.peek(), buf.readable_bytes()) == -1) {
       LOG_ERROR("sockfd[%d] failed to write [%d:%s]", 
-          conn->get_channel()->get_fd(), errno, strerror_thread_local(errno));
+          conn->channel()->get_fd(), errno, strerror_thread_local(errno));
     }
     context->reset();
   }
@@ -95,7 +87,7 @@ void HttpServer::send_error_page(const TcpConnectionPtr& conn, int error_code, s
   iov[2].iov_len = body.size();
   iov[3].iov_base = error_contents.data();
   iov[3].iov_len = error_contents.size();
-  int connection_fd = conn->get_channel()->get_fd();
+  int connection_fd = conn->channel()->get_fd();
   LOG_INFO("sockfd[%d] - Message responding...", connection_fd);
   if (::writev(connection_fd, iov, kNumIov) == -1) {
     LOG_ERROR("sockfd[%d] failed to write [%d:%s]", connection_fd, errno, strerror_thread_local(errno));

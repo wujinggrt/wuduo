@@ -36,6 +36,7 @@ void TcpConnection::established() {
   if (connection_callback_) {
     connection_callback_(shared_from_this());
   }
+  LOG_INFO("sockfd[%d] established", channel_.get_fd());
 }
 
 // called via tcp server.
@@ -55,11 +56,9 @@ void TcpConnection::destroyed() {
 void TcpConnection::handle_read() {
   loop_->assert_in_loop_thread();
   auto fd = channel_.get_fd();
-  LOG_DEBUG("sockfd[%d] Handling read", channel_.get_fd());
   // if the epoller use edge-triggered, read should called until return -1
   int saved_errno = 0;
   auto num_read = in_buffer_.read_fd(fd, &saved_errno);
-  LOG_DEBUG("sockfd[%d] read num[%d]", fd, num_read);
   if (num_read > 0) {
     if (message_callback_) {
       message_callback_(shared_from_this(), &in_buffer_);

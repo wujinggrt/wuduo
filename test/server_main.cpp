@@ -17,8 +17,7 @@ using namespace wuduo;
 using namespace wuduo::http;
 
 void on_message(const TcpConnectionPtr& conn, std::string msg) {
-  int connection_fd = conn->get_channel()->get_fd();
-  LOG_INFO("connection_fd[%d] read[%s]", connection_fd, msg.c_str());
+  int connection_fd = conn->channel()->get_fd();
   InetAddress local = InetAddress::local_from(connection_fd);
   InetAddress peer = InetAddress::peer_from(connection_fd);
   std::string echo_msg{"Hello, server"};

@@ -34,10 +34,11 @@ class TcpConnection : noncopyable,
    bool is_connected() const { return state_ == kConnected; }
    bool is_disconnected() const { return state_ == kDisconnected; }
 
-   Channel* get_channel() { return &channel_; }
-   EventLoop* get_loop() const { return loop_; }
+   const Channel* channel() const { return &channel_; }
+   EventLoop* loop() const { return loop_; }
+   Buffer* in_buffer() { return &in_buffer_; }
    void set_context(std::any context) { context_ = std::move(context); }
-   std::any* get_context() { return &context_; }
+   std::any* context() { return &context_; }
 
    // called only once and in this loop_, so it may be defered to established.
    // state: connecting -> connected, via server.

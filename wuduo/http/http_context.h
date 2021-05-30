@@ -6,6 +6,7 @@
 #include <optional>
 
 #include "wuduo/http/http_request.h"
+#include "wuduo/buffer.h"
 
 namespace wuduo::http {
 
@@ -18,9 +19,9 @@ class HttpContext {
     : phase_{ParsingPhase::kRequestLine}
   {}
 
-  bool parse_request(std::string msg);
+  bool parse_request(Buffer* buf);
 
-  bool is_parsing_completed() const {
+  bool parsing_completed() const {
     return phase_ == ParsingPhase::kCompleted; 
   }
 
@@ -28,8 +29,6 @@ class HttpContext {
     using std::swap;
     phase_ = ParsingPhase::kRequestLine;
     HttpContext dummy;
-    std::swap(in_buffer_, dummy.in_buffer_);
-    std::swap(out_buffer_, dummy.out_buffer_);
     request_.swap(dummy.request_);
   }
 
@@ -37,8 +36,6 @@ class HttpContext {
 
  private:
   ParsingPhase phase_;
-  std::string in_buffer_;
-  std::string out_buffer_;
   HttpRequest request_;
 };
 

@@ -61,14 +61,12 @@ void TcpServer::new_connection(int connection_fd, InetAddress peer) {
       [this] (const TcpConnectionPtr& conn) { remove_connection(conn); });
   io_loop->run_in_loop([conn] { 
     conn->established();
-    LOG_INFO("sockfd[%d] established", conn->get_channel()->get_fd());
   });
 }
 
 // run in loop, may return immediately.
 void TcpServer::remove_connection(const TcpConnectionPtr& conn) {
   loop_->run_in_loop([this, conn] {
-    LOG_DEBUG("sockfd[%d], remove: use count [%d]", conn->get_channel()->get_fd(), conn.use_count());
   // the bug version as below:
   // loop_->run_in_loop([this, &conn] {
     // here, the connection should be sured not to free because of number of ref count as zero.
@@ -76,9 +74,8 @@ void TcpServer::remove_connection(const TcpConnectionPtr& conn) {
     auto num_erased = connections_.erase(conn);
     (void)num_erased;
     assert(num_erased == 1);
-    auto* io_loop = conn->get_loop();
+    auto* io_loop = conn->loop();
     io_loop->queue_in_loop([conn] {
-    LOG_DEBUG("sockfd[%d], destroyed: use count [%d]", conn->get_channel()->get_fd(), conn.use_count());
       conn->destroyed();
     });
   });
