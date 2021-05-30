@@ -15,8 +15,8 @@ class Buffer;
 namespace wuduo::http {
 
 [[maybe_unused]] constexpr const std::string_view kHelloWorld =
-  "HTTP/1.1 200 OK\r\nContent-Type: text/html;charset=utf-8 \r\n\r\nHello wOrld!";
-  //"Hello world";
+  //"HTTP/1.1 200 OK\r\nContent-Type: text/html;charset=utf-8 \r\n\r\nHello wOrld!";
+  "Hello world";
 
 [[maybe_unused]] constexpr const std::string_view kBadRequest =
   "HTTP/1.1 400 Bad Request\r\nContent-Type: text/html;charset=utf-8 \r\n\r\n";
@@ -39,6 +39,7 @@ class HttpResponse {
     close_connection_{close_connection}
   {
     headers_["Content-Type"] = "text/html;charset=utf-8";
+    set_close_connection(close_connection);
   }
 
   void set_status_code(StatusCode code) {
@@ -61,11 +62,16 @@ class HttpResponse {
   void set_error_page_to_entity_body();
 
   bool close_connection() const { return close_connection_; }
-  void set_close_connection(bool close_connection) { close_connection_ = close_connection; }
+  void set_close_connection(bool close_connection) {
+    add_header("Connection", close_connection ? "close" : "keep-alive");
+    close_connection_ = close_connection; 
+  }
 
   std::string response_message() const;
   
   void append_to(Buffer* output) const;
+
+  void analyse(HttpRequest* request);
 
  private:
   std::unordered_map<std::string, std::string> headers_;

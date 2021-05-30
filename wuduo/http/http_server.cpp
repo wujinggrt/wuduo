@@ -57,12 +57,10 @@ void HttpServer::on_message(const TcpConnectionPtr& conn, Buffer* buf) {
 
   if (context->parsing_completed()) {
     auto* request = context->request();
-    auto connection = request->get_header("Connection");
-    const bool close_connection = (connection == "close") ||
-      (request->get_version() == Version::kHttp10 && connection != "Keep-Alive");
-    HttpResponse response{close_connection};
+    HttpResponse response{request->is_close_connection()};
     response.set_status_code(StatusCode::k200Ok);
-    response.set_entity_body(std::string{kHelloWorld});
+    // response.set_entity_body(std::string{kHelloWorld});
+    response.analyse(request);
     Buffer buf;
     response.append_to(&buf);
     conn->send(buf.peek(), buf.readable_bytes());
@@ -70,7 +68,6 @@ void HttpServer::on_message(const TcpConnectionPtr& conn, Buffer* buf) {
       // should be shutdown
       conn->shutdown();
     }
-    // TODO, reset context, reset the received buf.
     context->reset();
   }
 }

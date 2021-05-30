@@ -47,7 +47,10 @@ std::optional<RequestLine> RequestLine::from(std::string_view method,
   auto question_pos = url.find('?');
   if (question_pos != std::string_view::npos) {
     ret.path = std::string{url.data(), question_pos};
-    ret.query = std::string{url.substr(question_pos + 1)};
+    ret.query = std::string{url.substr(question_pos)};
+  } else {
+    // default
+    ret.path = url == "/" ? "index.html" : std::string{url.data() + 1, url.size() - 1};
   }
 
   ret.url = std::string{url};
@@ -107,8 +110,17 @@ bool HttpRequest::add_header_from(std::string_view line) {
   }
   std::string key{line.substr(0, pos_colon)};
   std::string value{line.substr(pos_value)};
-  LOG_DEBUG("parsed header: [%s, %s]", key.c_str(), value.c_str());
   return headers_.emplace(std::move(key), std::move(value)).second;
+}
+
+bool HttpRequest::is_close_connection() const {
+  auto connection_fied = get_header("Connection");
+  if (!connection_fied.has_value()) {
+    // default close
+    return true;
+  }
+  return (connection_fied.value() != "keep-alive") &&
+        (connection_fied.value() != "Keep-Alive");
 }
 
 }

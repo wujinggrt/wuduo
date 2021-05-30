@@ -57,16 +57,10 @@ void HttpResponse::append_to(Buffer* output) const {
   output->append(phrase_);
   output->append("\r\n");
 
-  if (close_connection_)
-  {
-    output->append("Connection: close\r\n");
-  }
-  else
-  {
+  if (!close_connection_) {
     num = snprintf(buf, sizeof buf, "Content-Length: %zd\r\n", entity_body_.size());
     if (num >= 0) {
       output->append(std::string_view(buf, num));
-      output->append("Connection: Keep-Alive\r\n");
     }
   }
 
@@ -79,6 +73,13 @@ void HttpResponse::append_to(Buffer* output) const {
 
   output->append("\r\n");
   output->append(entity_body_);
+}
+
+void HttpResponse::analyse(HttpRequest* request) {
+  set_close_connection(request->is_close_connection());
+  if (request->path() == "index.html") {
+    set_entity_body(std::string{kHelloWorld});
+  }
 }
 
 }

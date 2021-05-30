@@ -33,11 +33,11 @@ class HttpRequest {
  public:
   HttpRequest() = default;
 
-  Method get_method() const { return request_line_.method; }
-  Version get_version() const { return request_line_.version; }
-  std::string get_path() const { return request_line_.path; }
-  std::string get_query() const { return request_line_.query; }
-  std::string get_url() const { return request_line_.url; }
+  Method method() const { return request_line_.method; }
+  Version version() const { return request_line_.version; }
+  std::string path() const { return request_line_.path; }
+  std::string query() const { return request_line_.query; }
+  std::string url() const { return request_line_.url; }
   
   bool set_request_line_from(std::string_view line);
 
@@ -56,6 +56,8 @@ class HttpRequest {
     swap(request_line_, other.request_line_);
     swap(headers_, other.headers_);
   }
+
+  bool is_close_connection() const;
 
  private:
   RequestLine request_line_;
