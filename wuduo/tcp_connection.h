@@ -36,7 +36,6 @@ class TcpConnection : noncopyable,
 
    const Channel* channel() const { return &channel_; }
    EventLoop* loop() const { return loop_; }
-   Buffer* in_buffer() { return &in_buffer_; }
    void set_context(std::any context) { context_ = std::move(context); }
    std::any* context() { return &context_; }
 

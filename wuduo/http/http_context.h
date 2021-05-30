@@ -32,7 +32,7 @@ class HttpContext {
     request_.swap(dummy.request_);
   }
 
-  HttpRequest* get_request() { return &request_; }
+  HttpRequest* request() { return &request_; }
 
  private:
   ParsingPhase phase_;

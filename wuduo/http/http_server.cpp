@@ -54,9 +54,8 @@ void HttpServer::on_message(const TcpConnectionPtr& conn, Buffer* buf) {
     HttpResponse response;
     response.set_status_code(StatusCode::k200Ok);
     response.set_entity_body(std::string{kHelloWorld});
-    auto response_msg = response.get_response_message();
     Buffer buf;
-    buf.append(response_msg.data(), response_msg.size());
+    response.append_to(&buf);
     LOG_DEBUG("buf.readable_bytes()[%d], writable_bytes[%d]", buf.readable_bytes(), buf.writable_bytes());
     if (::write(conn->channel()->get_fd(), buf.peek(), buf.readable_bytes()) == -1) {
       LOG_ERROR("sockfd[%d] failed to write [%d:%s]", 
