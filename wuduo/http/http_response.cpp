@@ -1,4 +1,5 @@
 #include <cstring>
+#include <unordered_map>
 
 #include <unistd.h>
 #include <sys/types.h>
@@ -10,6 +11,29 @@
 
 namespace wuduo::http {
 
+std::string MimeType::from(std::string suffix) {
+  static MimeType mime;
+  auto iter = mime.types_.find(suffix);
+  return iter == mime.types_.end() ? mime.types_["default"] : iter->second;
+}
+
+MimeType::MimeType() {
+  types_[".html"] = std::string{kDefault};
+  types_[".avi"] = "video/x-msvideo";
+  types_[".bmp"] = "image/bmp";
+  types_[".c"] = "text/plain";
+  types_[".doc"] = "application/msword";
+  types_[".gif"] = "image/gif";
+  types_[".gz"] = "application/x-gzip";
+  types_[".htm"] = "text/html";
+  types_[".ico"] = "image/x-icon";
+  types_[".jpg"] = "image/jpeg";
+  types_[".png"] = "image/png";
+  types_[".txt"] = "text/plain";
+  types_[".mp3"] = "audio/mp3";
+  types_["default"] = std::string{kDefault};
+}
+
 std::string to_string(StatusCode code) {
   switch (code) {
     case StatusCode::k200Ok: return "OK";
@@ -19,6 +43,12 @@ std::string to_string(StatusCode code) {
     case StatusCode::k505HttpVersionNotSupported: return "HTTP Version Not Supported";
   }
   return "Unknown";
+}
+
+void HttpResponse::set_error_page_with(StatusCode code) {
+  set_status_code(code);
+  set_content_type(std::string{MimeType::kDefault});
+  set_error_page_to_entity_body();
 }
 
 void HttpResponse::set_error_page_to_entity_body() {
@@ -84,29 +114,31 @@ void HttpResponse::analyse(HttpRequest* request) {
   set_close_connection(request->is_close_connection());
   if (request->path() == "index.html") {
     set_entity_body(std::string{kIndexPage});
-  } else if (request->path() == "hello.html") {
-    set_entity_body(std::string{kHelloWorld});
-  } if (request->path() == "favicon.ico") {
-    set_content_type("image/png");
-
-    auto fd = ::open(request->path().c_str(), O_RDONLY | O_CLOEXEC);
-    if (fd == -1) {
-      set_status_code(StatusCode::k404NotFound);
-      set_content_type("text/html;charset=utf-8");
-      set_error_page_to_entity_body();
-      return ;
-    }
-    Buffer buf;
-    auto num_read = buf.read_fd(fd);
-    ::close(fd);
-    if (num_read < 0) {
-      set_status_code(StatusCode::k404NotFound);
-      set_content_type("text/html;charset=utf-8");
-      set_error_page_to_entity_body();
-      return ;
-    }
-    set_entity_body(std::string{buf.peek(), buf.readable_bytes()});
+    return ;
   }
+
+  const auto pos_dot = request->path().find_last_of('.');
+
+  if (pos_dot == std::string::npos) {
+    set_content_type(std::string{MimeType::kDefault});
+  } else {
+    set_content_type(
+        MimeType::from(request->path().substr(pos_dot)));
+  }
+
+  auto fd = ::open(request->path().c_str(), O_RDONLY | O_CLOEXEC);
+  if (fd == -1) {
+    set_error_page_with(StatusCode::k404NotFound);
+    return ;
+  }
+  Buffer buf;
+  auto num_read = buf.read_fd(fd);
+  ::close(fd);
+  if (num_read < 0) {
+    set_error_page_with(StatusCode::k404NotFound);
+    return ;
+  }
+  set_entity_body(std::string{buf.peek(), buf.readable_bytes()});
 }
 
 }

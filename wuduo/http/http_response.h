@@ -21,6 +21,18 @@ namespace wuduo::http {
 [[maybe_unused]] constexpr const std::string_view kIndexPage =
   "<html><body><p>Index page</p><a href=\"./hello.html\">Hello world!</a></body></html>";
 
+class MimeType {
+ public:
+  static std::string from(std::string suffix);
+
+  static constexpr const std::string_view kDefault{"text/html;charset=utf-8"};
+
+ private:
+  MimeType();
+
+  std::unordered_map<std::string, std::string> types_;
+};
+
 enum class StatusCode {
   k200Ok = 200,
   k301MovedPermanently = 301,
@@ -62,6 +74,8 @@ class HttpResponse {
   void set_entity_body(std::string body) {
     entity_body_ = std::move(body);
   }
+
+  void set_error_page_with(StatusCode code);
 
   void set_error_page_to_entity_body();
 
