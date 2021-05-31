@@ -84,6 +84,7 @@ class HttpResponse {
   void append_to(Buffer* output) const;
 
   Buffer* analyse_and_get_response_message_buffer();
+  // only modify internal response_messages_ and headers, entity_body_ not affected.
   void analyse(HttpRequest* request);
 
  private:

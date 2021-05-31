@@ -49,17 +49,14 @@ void HttpServer::on_message(const TcpConnectionPtr& conn, Buffer* buf) {
     response.set_error_page_to_entity_body();
     Buffer buf;
     response.append_to(&buf);
-    // conn->send(buf.peek(), buf.readable_bytes());
     conn->send(&buf);
     conn->shutdown();
-    //handle_error(conn, 400, "Bad request");
   }
 
   if (context->parsing_completed()) {
     auto* request = context->request();
     HttpResponse response{request->is_close_connection()};
     response.set_status_code(StatusCode::k200Ok);
-    // response.set_entity_body(std::string{kHelloWorld});
     response.analyse(request);
 #if 1
     Buffer buf;

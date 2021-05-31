@@ -77,27 +77,11 @@ void HttpResponse::set_error_page_to_entity_body() {
   buf.append(phrase_);
   buf.append("</p></body></html>");
 
-  set_entity_body(std::string{buf.peek(), buf.readable_bytes()});
+  set_entity_body(std::string_view{buf.peek(), buf.readable_bytes()});
   buf.retrieve_all();
 }
 
 std::string HttpResponse::response_message() const {
-#if 0
-  std::string ret;
-  char buf[32];
-  auto num = std::snprintf(buf, sizeof(buf), "HTTP/1.1 %d ", static_cast<int>(status_code_));
-  if (num < 0) {
-    return "";
-  }
-  std::string cr_lf{"\r\n"};
-  std::string status_line = std::string(buf, num) + phrase_ + cr_lf;
-  std::string header_lines;
-  for (const auto& [k, v] : headers_) {
-    header_lines += k + std::string{": "} + v + cr_lf;
-  }
-  header_lines += cr_lf;
-  return status_line + header_lines + entity_body_->retrieve_all_as_string();
-#endif
   Buffer buf;
   append_to(&buf);
   return buf.retrieve_all_as_string();
@@ -130,15 +114,14 @@ void HttpResponse::analyse(HttpRequest* request) {
     return ;
   }
   Buffer buf;
-  append_to(&buf);
+  // append_to(&buf);
   auto num_read = buf.read_fd(fd);
   ::close(fd);
   if (num_read < 0) {
     set_error_page_with(StatusCode::k404NotFound);
     return ;
   }
-  set_entity_body(std::string{buf.peek(), buf.readable_bytes()});
-  response_messages_->swap(buf);
+  entity_body_->swap(buf);
 }
 
 void HttpResponse::append_status_line_and_headers_to(Buffer* output) const {
