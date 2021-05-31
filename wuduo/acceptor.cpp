@@ -76,11 +76,13 @@ void Acceptor::on_incoming_connection() {
       if ((saved_errno == EAGAIN) || (saved_errno == EWOULDBLOCK)) {
         return ;
       }
-      LOG_ERROR("accept4(): %s(fd:%d, peer*:%p, len:%p[=%d])", 
+      LOG_FATAL("accept4(): %s(fd:%d, peer*:%p, len:%p[=%d])", 
           strerror_thread_local(saved_errno), acceptfd_, reinterpret_cast<sockaddr*>(&peer), &len, len);
+#if 0
       if ((saved_errno != ECONNABORTED) | (saved_errno != EMFILE)) {
         LOG_FATAL("unexcepted accept4");
       }
+#endif
       return ;
     }
     if (new_connection_callback_) {

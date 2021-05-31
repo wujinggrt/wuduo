@@ -61,9 +61,15 @@ void HttpServer::on_message(const TcpConnectionPtr& conn, Buffer* buf) {
     response.set_status_code(StatusCode::k200Ok);
     // response.set_entity_body(std::string{kHelloWorld});
     response.analyse(request);
+#if 1
     Buffer buf;
     response.append_to(&buf);
     conn->send(buf.peek(), buf.readable_bytes());
+#else
+    auto* buf = response.response_message_as_internal_buffer();
+    conn->send(buf->peek(), buf->readable_bytes());
+    LOG_INFO("buf contents, size[%d]:\n%.*s", buf->readable_bytes(), buf->readable_bytes(), buf->peek());
+#endif
     if (response.close_connection()) {
       // should be shutdown
       conn->shutdown();

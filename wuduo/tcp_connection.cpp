@@ -205,9 +205,11 @@ void TcpConnection::shutdown() {
         return ;
       }
       if (::shutdown(channel_.get_fd(), SHUT_WR) == -1) {
+#if 0
         int err = errno;
         LOG_ERROR("sockfd[%d] failed to shutdown write, [%d:%s]", 
             err, strerror_thread_local(err));
+#endif
       }
     });
   }

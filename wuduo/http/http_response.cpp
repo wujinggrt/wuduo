@@ -8,6 +8,7 @@
 
 #include "wuduo/http/http_response.h"
 #include "wuduo/buffer.h"
+#include "wuduo/log.h"
 
 namespace wuduo::http {
 
@@ -45,6 +46,21 @@ std::string to_string(StatusCode code) {
   return "Unknown";
 }
 
+HttpResponse::HttpResponse(bool close_connection)
+  : status_code_{StatusCode::k404NotFound},
+  phrase_{"Not Found"},
+  entity_body_{std::make_unique<Buffer>()},
+  response_messages_{std::make_unique<Buffer>()},
+  close_connection_{close_connection}
+{
+  set_close_connection(close_connection);
+  set_content_type("text/html;charset=utf-8");
+}
+
+void HttpResponse::set_entity_body(std::string_view body) {
+  entity_body_->append(body);
+}
+
 void HttpResponse::set_error_page_with(StatusCode code) {
   set_status_code(code);
   set_content_type(std::string{MimeType::kDefault});
@@ -66,6 +82,7 @@ void HttpResponse::set_error_page_to_entity_body() {
 }
 
 std::string HttpResponse::response_message() const {
+#if 0
   std::string ret;
   char buf[32];
   auto num = std::snprintf(buf, sizeof(buf), "HTTP/1.1 %d ", static_cast<int>(status_code_));
@@ -79,35 +96,16 @@ std::string HttpResponse::response_message() const {
     header_lines += k + std::string{": "} + v + cr_lf;
   }
   header_lines += cr_lf;
-  return status_line + header_lines + entity_body_;
+  return status_line + header_lines + entity_body_->retrieve_all_as_string();
+#endif
+  Buffer buf;
+  append_to(&buf);
+  return buf.retrieve_all_as_string();
 }
 
 void HttpResponse::append_to(Buffer* output) const {
-  char buf[32];
-  auto num = std::snprintf(buf, sizeof(buf), "HTTP/1.1 %d ", static_cast<int>(status_code_));
-  if (num < 0) { 
-    return ;
-  }
-  output->append(std::string_view(buf, num));
-  output->append(phrase_);
-  output->append("\r\n");
-
-  if (!close_connection_) {
-    num = snprintf(buf, sizeof buf, "Content-Length: %zd\r\n", entity_body_.size());
-    if (num >= 0) {
-      output->append(std::string_view(buf, num));
-    }
-  }
-
-  for (const auto& [k, v] : headers_) {
-    output->append(k);
-    output->append(": ");
-    output->append(v);
-    output->append("\r\n");
-  }
-
-  output->append("\r\n");
-  output->append(entity_body_);
+  append_status_line_and_headers_to(output);
+  output->append(entity_body_->peek(), entity_body_->readable_bytes());
 }
 
 void HttpResponse::analyse(HttpRequest* request) {
@@ -132,6 +130,7 @@ void HttpResponse::analyse(HttpRequest* request) {
     return ;
   }
   Buffer buf;
+  append_to(&buf);
   auto num_read = buf.read_fd(fd);
   ::close(fd);
   if (num_read < 0) {
@@ -139,6 +138,33 @@ void HttpResponse::analyse(HttpRequest* request) {
     return ;
   }
   set_entity_body(std::string{buf.peek(), buf.readable_bytes()});
+  response_messages_->swap(buf);
+}
+
+void HttpResponse::append_status_line_and_headers_to(Buffer* output) const {
+  char buf[32];
+  auto num = std::snprintf(buf, sizeof(buf), "HTTP/1.1 %d ", static_cast<int>(status_code_));
+  if (num < 0) { 
+    return ;
+  }
+  output->append(std::string_view(buf, num));
+  output->append(phrase_);
+  output->append("\r\n");
+
+  if (!close_connection_) {
+    num = snprintf(buf, sizeof buf, "Content-Length: %zd\r\n", entity_body_->readable_bytes());
+    if (num >= 0) {
+      output->append(std::string_view(buf, num));
+    }
+  }
+
+  for (const auto& [k, v] : headers_) {
+    output->append(k);
+    output->append(": ");
+    output->append(v);
+    output->append("\r\n");
+  }
+  output->append("\r\n");
 }
 
 }

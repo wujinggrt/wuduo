@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <unordered_map>
 #include <string>
 #include <string_view>
@@ -45,14 +46,7 @@ std::string to_string(StatusCode code);
 
 class HttpResponse {
  public:
-  HttpResponse(bool close_connection = true)
-    : status_code_{StatusCode::k404NotFound},
-    phrase_{"Not Found"},
-    close_connection_{close_connection}
-  {
-    set_close_connection(close_connection);
-    set_content_type("text/html;charset=utf-8");
-  }
+  HttpResponse(bool close_connection = true);
 
   void set_status_code(StatusCode code) {
     set_phrase(to_string(code));
@@ -71,9 +65,7 @@ class HttpResponse {
     add_header("Content-Type", std::move(content_type));
   }
 
-  void set_entity_body(std::string body) {
-    entity_body_ = std::move(body);
-  }
+  void set_entity_body(std::string_view body);
 
   void set_error_page_with(StatusCode code);
 
@@ -86,16 +78,22 @@ class HttpResponse {
   }
 
   std::string response_message() const;
+  // avoid copy.
+  Buffer* response_message_as_internal_buffer() const { return response_messages_.get(); }
   
   void append_to(Buffer* output) const;
 
+  Buffer* analyse_and_get_response_message_buffer();
   void analyse(HttpRequest* request);
 
  private:
+  void append_status_line_and_headers_to(Buffer* output) const;
+
   std::unordered_map<std::string, std::string> headers_;
   StatusCode status_code_;
   std::string phrase_;
-  std::string entity_body_;
+  std::unique_ptr<Buffer> entity_body_;
+  std::unique_ptr<Buffer> response_messages_;
   bool close_connection_;
 };
 
