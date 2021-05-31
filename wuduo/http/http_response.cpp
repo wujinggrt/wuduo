@@ -61,30 +61,21 @@ void HttpResponse::set_entity_body(std::string_view body) {
   entity_body_->append(body);
 }
 
-void HttpResponse::set_error_page_with(StatusCode code) {
+std::unique_ptr<Buffer> HttpResponse::error_message_with(StatusCode code) {
   set_status_code(code);
   set_content_type(std::string{MimeType::kDefault});
-  set_error_page_to_entity_body();
-}
-
-void HttpResponse::set_error_page_to_entity_body() {
-  Buffer buf;
-  buf.append("<html><title>出错了~</title>");
-  buf.append("<body><h1>ERROR<hr /></h1><p>");
-  std::string error_code = std::to_string(static_cast<int>(status_code_));
-  buf.append(std::string_view{error_code});
-  buf.append(", ");
-  buf.append(phrase_);
-  buf.append("</p></body></html>");
-
-  set_entity_body(std::string_view{buf.peek(), buf.readable_bytes()});
-  buf.retrieve_all();
-}
-
-std::string HttpResponse::response_message() const {
-  Buffer buf;
-  append_to(&buf);
-  return buf.retrieve_all_as_string();
+  entity_body_->retrieve_all();
+  entity_body_->append("<html><title>出错了~</title>");
+  entity_body_->append("<body><h1>ERROR<hr /></h1><p>");
+  const std::string error_code = std::to_string(static_cast<int>(code));
+  entity_body_->append(std::string_view{error_code});
+  entity_body_->append(", ");
+  entity_body_->append(phrase_);
+  entity_body_->append("</p></body></html>");
+  auto buffer = std::make_unique<Buffer>();
+  append_status_line_and_headers_to(buffer.get());
+  buffer->append(entity_body_->peek(), entity_body_->readable_bytes());
+  return buffer;
 }
 
 void HttpResponse::append_to(Buffer* output) const {
@@ -92,15 +83,10 @@ void HttpResponse::append_to(Buffer* output) const {
   output->append(entity_body_->peek(), entity_body_->readable_bytes());
 }
 
-void HttpResponse::analyse(HttpRequest* request) {
+std::unique_ptr<Buffer> HttpResponse::analyse(HttpRequest* request) {
+  auto output = std::make_unique<Buffer>();
   set_close_connection(request->is_close_connection());
-  if (request->path() == "index.html") {
-    set_entity_body(std::string{kIndexPage});
-    return ;
-  }
-
   const auto pos_dot = request->path().find_last_of('.');
-
   if (pos_dot == std::string::npos) {
     set_content_type(std::string{MimeType::kDefault});
   } else {
@@ -109,19 +95,22 @@ void HttpResponse::analyse(HttpRequest* request) {
   }
 
   auto fd = ::open(request->path().c_str(), O_RDONLY | O_CLOEXEC);
-  if (fd == -1) {
-    set_error_page_with(StatusCode::k404NotFound);
-    return ;
-  }
-  Buffer buf;
-  // append_to(&buf);
-  auto num_read = buf.read_fd(fd);
+  do {
+    if (fd == -1) {
+      break;
+    }
+    auto num_read = entity_body_->read_fd(fd);
+    if (num_read < 0) {
+      break;
+    }
+    ::close(fd);
+    append_status_line_and_headers_to(output.get());
+    output->append(entity_body_->peek(), entity_body_->readable_bytes());
+    return output;
+  } while(false);
+  // process error not found.
   ::close(fd);
-  if (num_read < 0) {
-    set_error_page_with(StatusCode::k404NotFound);
-    return ;
-  }
-  entity_body_->swap(buf);
+  return error_message_with(StatusCode::k404NotFound);
 }
 
 void HttpResponse::append_status_line_and_headers_to(Buffer* output) const {
@@ -134,11 +123,9 @@ void HttpResponse::append_status_line_and_headers_to(Buffer* output) const {
   output->append(phrase_);
   output->append("\r\n");
 
-  if (!close_connection_) {
-    num = snprintf(buf, sizeof buf, "Content-Length: %zd\r\n", entity_body_->readable_bytes());
-    if (num >= 0) {
-      output->append(std::string_view(buf, num));
-    }
+  num = snprintf(buf, sizeof buf, "Content-Length: %zd\r\n", entity_body_->readable_bytes());
+  if (num >= 0) {
+    output->append(std::string_view(buf, num));
   }
 
   for (const auto& [k, v] : headers_) {

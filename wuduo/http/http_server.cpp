@@ -22,7 +22,6 @@ HttpServer::HttpServer(EventLoop* loop, InetAddress address)
   server_.set_connection_callback([] (const TcpConnectionPtr& conn) {
     if (conn->is_connected()) {
       conn->set_context(std::make_any<HttpContext>());
-      LOG_DEBUG("setting context completed");
     }
   });
   server_.set_message_callback([this] (const auto& conn, Buffer* buf) {
@@ -39,17 +38,16 @@ void HttpServer::on_message(const TcpConnectionPtr& conn, Buffer* buf) {
   // EOF, peer closed.
   HttpContext* context = std::any_cast<HttpContext>(conn->context());
 
+#if 0
   auto num_read = buf->readable_bytes();
   std::string msg{buf->peek(), num_read};
   LOG_INFO("sockfd[%d] num_read[%d], contents:\n%s", conn->channel()->get_fd(), num_read, msg.c_str());
+#endif
 
   if (!context->parse_request(buf)) {
     HttpResponse response;
-    response.set_status_code(StatusCode::k400BadRequest);
-    response.set_error_page_to_entity_body();
-    Buffer buf;
-    response.append_to(&buf);
-    conn->send(&buf);
+    auto buf = response.error_message_with(StatusCode::k400BadRequest);
+    conn->send(buf.get());
     conn->shutdown();
   }
 
@@ -57,16 +55,8 @@ void HttpServer::on_message(const TcpConnectionPtr& conn, Buffer* buf) {
     auto* request = context->request();
     HttpResponse response{request->is_close_connection()};
     response.set_status_code(StatusCode::k200Ok);
-    response.analyse(request);
-#if 1
-    Buffer buf;
-    response.append_to(&buf);
-    conn->send(buf.peek(), buf.readable_bytes());
-#else
-    auto* buf = response.response_message_as_internal_buffer();
+    auto buf = response.analyse(request);
     conn->send(buf->peek(), buf->readable_bytes());
-    LOG_INFO("buf contents, size[%d]:\n%.*s", buf->readable_bytes(), buf->readable_bytes(), buf->peek());
-#endif
     if (response.close_connection()) {
       // should be shutdown
       conn->shutdown();

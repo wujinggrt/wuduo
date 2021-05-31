@@ -67,9 +67,7 @@ class HttpResponse {
 
   void set_entity_body(std::string_view body);
 
-  void set_error_page_with(StatusCode code);
-
-  void set_error_page_to_entity_body();
+  std::unique_ptr<Buffer> error_message_with(StatusCode code);
 
   bool close_connection() const { return close_connection_; }
   void set_close_connection(bool close_connection) {
@@ -77,18 +75,16 @@ class HttpResponse {
     close_connection_ = close_connection; 
   }
 
-  std::string response_message() const;
   // avoid copy.
   Buffer* response_message_as_internal_buffer() const { return response_messages_.get(); }
   
   void append_to(Buffer* output) const;
+  void append_status_line_and_headers_to(Buffer* output) const;
 
-  Buffer* analyse_and_get_response_message_buffer();
-  // only modify internal response_messages_ and headers, entity_body_ not affected.
-  void analyse(HttpRequest* request);
+  // remains entity_body_ unmodified, only the contents returned.
+  std::unique_ptr<Buffer> analyse(HttpRequest* request);
 
  private:
-  void append_status_line_and_headers_to(Buffer* output) const;
 
   std::unordered_map<std::string, std::string> headers_;
   StatusCode status_code_;
