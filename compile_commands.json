@@ -1,0 +1,362 @@
+[
+    {
+        "arguments": [
+            "g++",
+            "-c",
+            "-I../wuduo",
+            "-I../",
+            "-g",
+            "-std=c++2a",
+            "-Wall",
+            "-Wextra",
+            "-O0",
+            "-fsanitize=address",
+            "-fno-omit-frame-pointer",
+            "-o",
+            "build/util.o",
+            "wuduo/util.cpp"
+        ],
+        "directory": "/home/wujing/Program/wuduo",
+        "file": "wuduo/util.cpp"
+    },
+    {
+        "arguments": [
+            "g++",
+            "-c",
+            "-I../wuduo",
+            "-I../",
+            "-g",
+            "-std=c++2a",
+            "-Wall",
+            "-Wextra",
+            "-O0",
+            "-fsanitize=address",
+            "-fno-omit-frame-pointer",
+            "-o",
+            "build/event_loop_thread_pool.o",
+            "wuduo/event_loop_thread_pool.cpp"
+        ],
+        "directory": "/home/wujing/Program/wuduo",
+        "file": "wuduo/event_loop_thread_pool.cpp"
+    },
+    {
+        "arguments": [
+            "g++",
+            "-c",
+            "-I../wuduo",
+            "-I../",
+            "-g",
+            "-std=c++2a",
+            "-Wall",
+            "-Wextra",
+            "-O0",
+            "-fsanitize=address",
+            "-fno-omit-frame-pointer",
+            "-o",
+            "build/buffer.o",
+            "wuduo/buffer.cpp"
+        ],
+        "directory": "/home/wujing/Program/wuduo",
+        "file": "wuduo/buffer.cpp"
+    },
+    {
+        "arguments": [
+            "g++",
+            "-c",
+            "-I../wuduo",
+            "-I../",
+            "-g",
+            "-std=c++2a",
+            "-Wall",
+            "-Wextra",
+            "-O0",
+            "-fsanitize=address",
+            "-fno-omit-frame-pointer",
+            "-o",
+            "build/inet_address.o",
+            "wuduo/inet_address.cpp"
+        ],
+        "directory": "/home/wujing/Program/wuduo",
+        "file": "wuduo/inet_address.cpp"
+    },
+    {
+        "arguments": [
+            "g++",
+            "-c",
+            "-I../wuduo",
+            "-I../",
+            "-g",
+            "-std=c++2a",
+            "-Wall",
+            "-Wextra",
+            "-O0",
+            "-fsanitize=address",
+            "-fno-omit-frame-pointer",
+            "-o",
+            "build/http_request.o",
+            "wuduo/http/http_request.cpp"
+        ],
+        "directory": "/home/wujing/Program/wuduo",
+        "file": "wuduo/http/http_request.cpp"
+    },
+    {
+        "arguments": [
+            "g++",
+            "-c",
+            "-I../wuduo",
+            "-I../",
+            "-g",
+            "-std=c++2a",
+            "-Wall",
+            "-Wextra",
+            "-O0",
+            "-fsanitize=address",
+            "-fno-omit-frame-pointer",
+            "-o",
+            "build/http_response.o",
+            "wuduo/http/http_response.cpp"
+        ],
+        "directory": "/home/wujing/Program/wuduo",
+        "file": "wuduo/http/http_response.cpp"
+    },
+    {
+        "arguments": [
+            "g++",
+            "-c",
+            "-I../wuduo",
+            "-I../",
+            "-g",
+            "-std=c++2a",
+            "-Wall",
+            "-Wextra",
+            "-O0",
+            "-fsanitize=address",
+            "-fno-omit-frame-pointer",
+            "-o",
+            "build/http_server.o",
+            "wuduo/http/http_server.cpp"
+        ],
+        "directory": "/home/wujing/Program/wuduo",
+        "file": "wuduo/http/http_server.cpp"
+    },
+    {
+        "arguments": [
+            "g++",
+            "-c",
+            "-I../wuduo",
+            "-I../",
+            "-g",
+            "-std=c++2a",
+            "-Wall",
+            "-Wextra",
+            "-O0",
+            "-fsanitize=address",
+            "-fno-omit-frame-pointer",
+            "-o",
+            "build/acceptor.o",
+            "wuduo/acceptor.cpp"
+        ],
+        "directory": "/home/wujing/Program/wuduo",
+        "file": "wuduo/acceptor.cpp"
+    },
+    {
+        "arguments": [
+            "g++",
+            "-c",
+            "-I../wuduo",
+            "-I../",
+            "-g",
+            "-std=c++2a",
+            "-Wall",
+            "-Wextra",
+            "-O0",
+            "-fsanitize=address",
+            "-fno-omit-frame-pointer",
+            "-o",
+            "build/server_main.o",
+            "test/server_main.cpp"
+        ],
+        "directory": "/home/wujing/Program/wuduo",
+        "file": "test/server_main.cpp"
+    },
+    {
+        "arguments": [
+            "g++",
+            "-c",
+            "-I../wuduo",
+            "-I../",
+            "-g",
+            "-std=c++2a",
+            "-Wall",
+            "-Wextra",
+            "-O0",
+            "-fsanitize=address",
+            "-fno-omit-frame-pointer",
+            "-o",
+            "build/tcp_server.o",
+            "wuduo/tcp_server.cpp"
+        ],
+        "directory": "/home/wujing/Program/wuduo",
+        "file": "wuduo/tcp_server.cpp"
+    },
+    {
+        "arguments": [
+            "g++",
+            "-c",
+            "-I../wuduo",
+            "-I../",
+            "-g",
+            "-std=c++2a",
+            "-Wall",
+            "-Wextra",
+            "-O0",
+            "-fsanitize=address",
+            "-fno-omit-frame-pointer",
+            "-o",
+            "build/tcp_connection.o",
+            "wuduo/tcp_connection.cpp"
+        ],
+        "directory": "/home/wujing/Program/wuduo",
+        "file": "wuduo/tcp_connection.cpp"
+    },
+    {
+        "arguments": [
+            "g++",
+            "-c",
+            "-I../wuduo",
+            "-I../",
+            "-g",
+            "-std=c++2a",
+            "-Wall",
+            "-Wextra",
+            "-O0",
+            "-fsanitize=address",
+            "-fno-omit-frame-pointer",
+            "-o",
+            "build/log.o",
+            "wuduo/log.cpp"
+        ],
+        "directory": "/home/wujing/Program/wuduo",
+        "file": "wuduo/log.cpp"
+    },
+    {
+        "arguments": [
+            "g++",
+            "-c",
+            "-I../wuduo",
+            "-I../",
+            "-g",
+            "-std=c++2a",
+            "-Wall",
+            "-Wextra",
+            "-O0",
+            "-fsanitize=address",
+            "-fno-omit-frame-pointer",
+            "-o",
+            "build/event_loop_thread.o",
+            "wuduo/event_loop_thread.cpp"
+        ],
+        "directory": "/home/wujing/Program/wuduo",
+        "file": "wuduo/event_loop_thread.cpp"
+    },
+    {
+        "arguments": [
+            "g++",
+            "-c",
+            "-I../wuduo",
+            "-I../",
+            "-g",
+            "-std=c++2a",
+            "-Wall",
+            "-Wextra",
+            "-O0",
+            "-fsanitize=address",
+            "-fno-omit-frame-pointer",
+            "-o",
+            "build/channel.o",
+            "wuduo/channel.cpp"
+        ],
+        "directory": "/home/wujing/Program/wuduo",
+        "file": "wuduo/channel.cpp"
+    },
+    {
+        "arguments": [
+            "g++",
+            "-c",
+            "-I../wuduo",
+            "-I../",
+            "-g",
+            "-std=c++2a",
+            "-Wall",
+            "-Wextra",
+            "-O0",
+            "-fsanitize=address",
+            "-fno-omit-frame-pointer",
+            "-o",
+            "build/http_context.o",
+            "wuduo/http/http_context.cpp"
+        ],
+        "directory": "/home/wujing/Program/wuduo",
+        "file": "wuduo/http/http_context.cpp"
+    },
+    {
+        "arguments": [
+            "g++",
+            "-c",
+            "-I../wuduo",
+            "-I../",
+            "-g",
+            "-std=c++2a",
+            "-Wall",
+            "-Wextra",
+            "-O0",
+            "-fsanitize=address",
+            "-fno-omit-frame-pointer",
+            "-o",
+            "build/timer_queue.o",
+            "wuduo/timer_queue.cpp"
+        ],
+        "directory": "/home/wujing/Program/wuduo",
+        "file": "wuduo/timer_queue.cpp"
+    },
+    {
+        "arguments": [
+            "g++",
+            "-c",
+            "-I../wuduo",
+            "-I../",
+            "-g",
+            "-std=c++2a",
+            "-Wall",
+            "-Wextra",
+            "-O0",
+            "-fsanitize=address",
+            "-fno-omit-frame-pointer",
+            "-o",
+            "build/event_loop.o",
+            "wuduo/event_loop.cpp"
+        ],
+        "directory": "/home/wujing/Program/wuduo",
+        "file": "wuduo/event_loop.cpp"
+    },
+    {
+        "arguments": [
+            "g++",
+            "-c",
+            "-I../wuduo",
+            "-I../",
+            "-g",
+            "-std=c++2a",
+            "-Wall",
+            "-Wextra",
+            "-O0",
+            "-fsanitize=address",
+            "-fno-omit-frame-pointer",
+            "-o",
+            "build/epoller.o",
+            "wuduo/epoller.cpp"
+        ],
+        "directory": "/home/wujing/Program/wuduo",
+        "file": "wuduo/epoller.cpp"
+    }
+]

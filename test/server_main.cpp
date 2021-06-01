@@ -4,6 +4,7 @@
 #include <unistd.h>
 
 #include <sys/socket.h>
+#include <getopt.h>
 
 #include "../wuduo/tcp_server.h"
 #include "../wuduo/event_loop.h"
@@ -30,9 +31,20 @@ void on_message(const TcpConnectionPtr& conn, std::string msg) {
   }
 }
 
-int main() {
+int main(int argc, char** argv) {
+  uint16_t port = 80;
+  int num_thread = 4;
+  int opt;
+  constexpr const char* specified = "t:p:";
+  while ((opt = ::getopt(argc, argv, specified)) != -1) {
+    switch (opt) {
+      case 't': num_thread = std::atoi(::optarg); (void) num_thread; break;
+      case 'p': port = std::atoi(::optarg); break;
+      default: break;
+    }
+  }
   EventLoop loop;
-  InetAddress address{12000};
+  InetAddress address{port};
   HttpServer server{&loop, address};
   server.start();
   loop.loop();
