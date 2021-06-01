@@ -89,9 +89,12 @@ std::unique_ptr<Buffer> HttpResponse::analyse(HttpRequest* request) {
   const auto pos_dot = request->path().find_last_of('.');
   if (pos_dot == std::string::npos) {
     set_content_type(std::string{MimeType::kDefault});
+    LOG_INFO("responsed type[%s]", "html");
   } else {
     set_content_type(
         MimeType::from(request->path().substr(pos_dot)));
+    auto mime_type = MimeType::from(request->path().substr(pos_dot));
+    LOG_INFO("responsed type[%s]", mime_type.c_str());
   }
 
   auto fd = ::open(request->path().c_str(), O_RDONLY | O_CLOEXEC);
