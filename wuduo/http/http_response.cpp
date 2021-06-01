@@ -118,6 +118,7 @@ std::unique_ptr<Buffer> HttpResponse::analyse(HttpRequest* request) {
     auto num_read = entity_body_->read_fd(fd);
     if (num_read < 0) {
       // process error not found.
+      LOG_ERROR("failed to read [%s:%ld]", request->path().c_str(), entity_body_->readable_bytes());
       ::close(fd);
       return error_message_with(StatusCode::k404NotFound);
     } else if (entity_body_->readable_bytes() < static_cast<size_t>(file_metadata.st_size)) {
