@@ -59,11 +59,11 @@ void Epoller::update_channel(Channel* channel) {
   ee.data.ptr = channel;
   int op = get_ctl_op_from(channel);
   std::string operation{op == EPOLL_CTL_ADD ? "ADD" : op == EPOLL_CTL_MOD ? "MOD" : "DEL"};
-  LOG_INFO("Epoller::epoll_ctl(), channel->fd[%d], [%s]", channel->get_fd(), operation.c_str());
-  if (::epoll_ctl(epollfd_, op, channel->get_fd(), &ee) == -1) {
-    int err = get_socket_error(channel->get_fd());
+  LOG_INFO("Epoller::epoll_ctl(), channel->fd[%d], [%s]", channel->fd(), operation.c_str());
+  if (::epoll_ctl(epollfd_, op, channel->fd(), &ee) == -1) {
+    int err = get_socket_error(channel->fd());
     LOG_ERROR("::epoll_ctl, %s, channel->fd[%d] [%d:%s]", 
-        operation.c_str(), channel->get_fd(), err, strerror_thread_local(err));
+        operation.c_str(), channel->fd(), err, strerror_thread_local(err));
   } else {
     set_state_in_interest_list(channel, op);
   }

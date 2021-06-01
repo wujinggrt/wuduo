@@ -23,8 +23,8 @@ TcpConnection::TcpConnection(EventLoop* loop, int sockfd, InetAddress peer)
 }
 
 TcpConnection::~TcpConnection() {
-  LOG_DEBUG("TcpConnection dtor sockfd[%d]", channel_.get_fd());
-  ::close(channel_.get_fd());
+  LOG_DEBUG("TcpConnection dtor sockfd[%d]", channel_.fd());
+  ::close(channel_.fd());
 }
 
 void TcpConnection::established() {
@@ -32,12 +32,12 @@ void TcpConnection::established() {
   assert(state_ == kConnecting);
   set_state(kConnected);
   channel_.enable_reading();
-  LOG_INFO("sockfd[%d] enabled reading", channel_.get_fd());
+  LOG_INFO("sockfd[%d] enabled reading", channel_.fd());
 
   if (connection_callback_) {
     connection_callback_(shared_from_this());
   }
-  LOG_INFO("sockfd[%d] established", channel_.get_fd());
+  LOG_INFO("sockfd[%d] established", channel_.fd());
 }
 
 // called via tcp server.
@@ -85,22 +85,22 @@ void TcpConnection::send(const char* data, size_t count) {
 void TcpConnection::send_in_loop(const char* data, size_t count) {
   loop_->assert_in_loop_thread();
   if (state_ == kDisconnected) {
-    LOG_WARN("sockfd[%d] disconnected, give up writing", channel_.get_fd());
+    LOG_WARN("sockfd[%d] disconnected, give up writing", channel_.fd());
     return ;
   }
   ssize_t num_wrote = 0;
   // it is ok to write directly now, no pending write.
   if (!channel_.is_writing() && (output_buffer_.readable_bytes() == 0)) {
-    num_wrote = ::write(channel_.get_fd(), data, count);
+    num_wrote = ::write(channel_.fd(), data, count);
     if (num_wrote >= 0) {
       if (static_cast<size_t>(num_wrote) < count) {
-        LOG_DEBUG("sockfd[%d] write more data", channel_.get_fd());
+        LOG_DEBUG("sockfd[%d] write more data", channel_.fd());
       }
     } else {
       // error, pending contents to buffer.
       num_wrote = 0;
       if ((errno != EWOULDBLOCK) || (errno != EAGAIN)) {
-        LOG_ERROR("sockfd[%d] unexpected write, [%d:%s]", channel_.get_fd(), errno, strerror_thread_local(errno));
+        LOG_ERROR("sockfd[%d] unexpected write, [%d:%s]", channel_.fd(), errno, strerror_thread_local(errno));
       }
     }
   }
@@ -116,7 +116,7 @@ void TcpConnection::send_in_loop(const char* data, size_t count) {
 
 void TcpConnection::handle_read() {
   loop_->assert_in_loop_thread();
-  auto fd = channel_.get_fd();
+  auto fd = channel_.fd();
   // if the epoller use edge-triggered, read should called until return -1
   int saved_errno = 0;
   auto num_read = in_buffer_.read_fd(fd, &saved_errno);
@@ -126,7 +126,7 @@ void TcpConnection::handle_read() {
     }
   } else if (num_read == 0) {
     set_state(kDisconnecting);
-    LOG_INFO("sockfd[%d] Peer closed", channel_.get_fd());
+    LOG_INFO("sockfd[%d] Peer closed", channel_.fd());
     handle_close();
     return ;
   } else if (num_read == -1) {
@@ -141,7 +141,7 @@ void TcpConnection::handle_read() {
 void TcpConnection::handle_write() {
   loop_->assert_in_loop_thread();
   if (channel_.is_writing()) {
-    auto num_wrote = ::write(channel_.get_fd(), output_buffer_.peek(), output_buffer_.readable_bytes());
+    auto num_wrote = ::write(channel_.fd(), output_buffer_.peek(), output_buffer_.readable_bytes());
     if (num_wrote > 0) {
       output_buffer_.retrieve(num_wrote);
       if (output_buffer_.readable_bytes() == 0) {
@@ -153,15 +153,15 @@ void TcpConnection::handle_write() {
       }
     } else {
       int err = errno;
-      LOG_ERROR("sockfd[%d] ::write()", channel_.get_fd(), err, strerror_thread_local(err));
+      LOG_ERROR("sockfd[%d] ::write()", channel_.fd(), err, strerror_thread_local(err));
     }
   } else {
-    LOG_TRACE("sockfd[%d]:No more writing", channel_.get_fd());
+    LOG_TRACE("sockfd[%d]:No more writing", channel_.fd());
   }
 }
 
 void TcpConnection::handle_close() {
-  LOG_DEBUG("sockfd[%d] tcp_connection state_[%s]", channel_.get_fd(), get_state_string().c_str());
+  LOG_DEBUG("sockfd[%d] tcp_connection state_[%s]", channel_.fd(), get_state_string().c_str());
   assert((state_ == kConnected) || (state_ == kDisconnecting));
   set_state(kDisconnected);
   // the epoller will not monitor this sockfd any longer,
@@ -181,8 +181,8 @@ void TcpConnection::handle_close() {
 }
 
 void TcpConnection::handle_error() {
-  int err = get_socket_error(channel_.get_fd());
-  LOG_ERROR("sockfd[%d] handle_error(), SO_ERROR=%d [%s]", channel_.get_fd(), err, std::strerror(err));
+  int err = get_socket_error(channel_.fd());
+  LOG_ERROR("sockfd[%d] handle_error(), SO_ERROR=%d [%s]", channel_.fd(), err, std::strerror(err));
   force_close();
 }
 
@@ -205,7 +205,7 @@ void TcpConnection::shutdown() {
         // we have pending write task.
         return ;
       }
-      if (::shutdown(channel_.get_fd(), SHUT_WR) == -1) {
+      if (::shutdown(channel_.fd(), SHUT_WR) == -1) {
 #if 0
         int err = errno;
         LOG_ERROR("sockfd[%d] failed to shutdown write, [%d:%s]", 

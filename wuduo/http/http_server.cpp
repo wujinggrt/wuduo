@@ -86,7 +86,7 @@ void HttpServer::send_error_page(const TcpConnectionPtr& conn, int error_code, s
   iov[2].iov_len = body.size();
   iov[3].iov_base = error_contents.data();
   iov[3].iov_len = error_contents.size();
-  int connection_fd = conn->channel()->get_fd();
+  int connection_fd = conn->channel()->fd();
   LOG_INFO("sockfd[%d] - Message responding...", connection_fd);
   if (::writev(connection_fd, iov, kNumIov) == -1) {
     LOG_ERROR("sockfd[%d] failed to write [%d:%s]", connection_fd, errno, strerror_thread_local(errno));

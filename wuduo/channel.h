@@ -38,7 +38,7 @@ class Channel : noncopyable {
   void handle_events();
 
   EventLoop* get_owner_loop() const { return loop_; }
-  int get_fd() const { return fd_; }
+  int fd() const { return fd_; }
   uint32_t get_events() const { return events_; }
   void set_revents(uint32_t e) { revents_ = e; }
   bool has_none_events() const { return events_ == 0; }
