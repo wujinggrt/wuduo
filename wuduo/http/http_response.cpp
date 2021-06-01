@@ -95,7 +95,7 @@ std::unique_ptr<Buffer> HttpResponse::analyse(HttpRequest* request) {
     set_content_type(
         MimeType::from(request->path().substr(pos_dot)));
     auto mime_type = MimeType::from(request->path().substr(pos_dot));
-    LOG_INFO("responsed type[.%.*s:%s]", 
+    LOG_INFO("responsed type[%.*s:%s]", 
                                         request->path().size() - pos_dot, 
                                         request->path().data() + pos_dot, 
                                         mime_type.c_str());
