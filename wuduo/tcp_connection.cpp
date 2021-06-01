@@ -161,7 +161,7 @@ void TcpConnection::handle_write() {
 }
 
 void TcpConnection::handle_close() {
-  LOG_DEBUG("sockfd[%d] tcp_connection state_[%s]", channel_.fd(), get_state_string().c_str());
+  LOG_DEBUG("sockfd[%d] tcp_connection state_[%s]", channel_.fd(), state_as_string().c_str());
   assert((state_ == kConnected) || (state_ == kDisconnecting));
   set_state(kDisconnected);
   // the epoller will not monitor this sockfd any longer,

@@ -39,7 +39,7 @@ Acceptor::Acceptor(EventLoop* loop, InetAddress local)
     int err = errno;
     LOG_ERROR("setsockopt SO_REUSEPORT, [%d:%s]", err, strerror_thread_local(err));
   }
-  if (::bind(acceptfd_, local.get_address(), local.get_len()) == -1) {
+  if (::bind(acceptfd_, local.address(), local.length()) == -1) {
     int err = errno;
     LOG_ERROR("failed to bind on sockfd[%d], [%d:%s]", acceptfd_, err, strerror_thread_local(err));
   }

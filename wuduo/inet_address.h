@@ -17,14 +17,14 @@ class InetAddress {
   void set_address(const sockaddr_in& address) {
     address_ = address;
   }
-  const sockaddr* get_address() const {
+  const sockaddr* address() const {
     return reinterpret_cast<const sockaddr*>(&address_);
   };
-  socklen_t get_len() const {
+  socklen_t length() const {
     return sizeof(address_);
   }
-  uint16_t get_port() const;
-  std::string get_ip() const;
+  uint16_t port() const;
+  std::string ip() const;
 
   static InetAddress local_from(int connect_sockfd);
   static InetAddress peer_from(int connect_sockfd);

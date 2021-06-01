@@ -59,7 +59,7 @@ class TcpConnection : noncopyable,
 
    void shutdown();
 
-   std::string get_state_string() {
+   std::string state_as_string() {
      switch (state_) {
        case kConnecting: return "kConnecting";
        case kConnected: return "kConnected";

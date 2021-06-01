@@ -31,11 +31,11 @@ InetAddress::InetAddress(uint16_t port, std::string_view ip_address) {
 InetAddress::InetAddress(const sockaddr_in& address) 
   : address_{address} {}
 
-uint16_t InetAddress::get_port() const {
+uint16_t InetAddress::port() const {
   return ::be16toh(address_.sin_port);
 }
 
-std::string InetAddress::get_ip() const {
+std::string InetAddress::ip() const {
   char buf[INET_ADDRSTRLEN] = "";
   ::inet_ntop(AF_INET, &address_.sin_addr, buf, INET_ADDRSTRLEN);
   return std::string{buf};

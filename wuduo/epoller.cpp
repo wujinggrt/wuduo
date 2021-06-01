@@ -57,7 +57,7 @@ void Epoller::update_channel(Channel* channel) {
   ::epoll_event ee;
   ee.events = channel->events();
   ee.data.ptr = channel;
-  int op = get_ctl_op_from(channel);
+  int op = ctl_op_from(channel);
   std::string operation{op == EPOLL_CTL_ADD ? "ADD" : op == EPOLL_CTL_MOD ? "MOD" : "DEL"};
   LOG_INFO("Epoller::epoll_ctl(), channel->fd[%d], [%s]", channel->fd(), operation.c_str());
   if (::epoll_ctl(epollfd_, op, channel->fd(), &ee) == -1) {
@@ -69,7 +69,7 @@ void Epoller::update_channel(Channel* channel) {
   }
 }
 
-int Epoller::get_ctl_op_from(Channel* channel) const {
+int Epoller::ctl_op_from(Channel* channel) const {
   if (!channel->is_in_interst_list()) {
     // channel has never added to epoll.
     assert(!channel->has_none_events());

@@ -132,7 +132,7 @@ void EventLoop::assert_not_in_loop_thread() const {
   assert(!in_loop_thread());
 }
 
-EventLoop* EventLoop::get_event_loop_in_this_thread() {
+EventLoop* EventLoop::event_loop_in_this_thread() {
   return loop_in_this_thread;
 }
 

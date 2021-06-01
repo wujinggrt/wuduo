@@ -48,9 +48,9 @@ void TcpServer::start() {
 
 void TcpServer::new_connection(int connection_fd, InetAddress peer) {
   LOG_INFO("New connection, fd[%d] local (%s, %d), peer (%s, %d)", connection_fd,
-      local_.get_ip().c_str(), local_.get_port(),
-      peer.get_ip().c_str(), peer.get_port());
-  auto* io_loop = event_loop_thread_pool_.get_next_loop();
+      local_.ip().c_str(), local_.port(),
+      peer.ip().c_str(), peer.port());
+  auto* io_loop = event_loop_thread_pool_.next_loop();
   auto conn = std::make_shared<TcpConnection>(io_loop, connection_fd, peer);
   auto [iter, ok] = connections_.insert(conn);
   (void) iter;

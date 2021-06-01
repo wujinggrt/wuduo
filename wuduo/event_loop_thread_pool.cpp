@@ -26,7 +26,7 @@ void EventLoopThreadPool::start() {
   }
 }
 
-EventLoop* EventLoopThreadPool::get_next_loop() {
+EventLoop* EventLoopThreadPool::next_loop() {
   base_loop_->assert_in_loop_thread();
   assert(started_);
   if (workers_.empty()) {

@@ -25,7 +25,7 @@ class Epoller : noncopyable {
 
  private:
   // a helper function to get epoll_ctl op argument.
-  int get_ctl_op_from(Channel* channel) const;
+  int ctl_op_from(Channel* channel) const;
   // helper function.
   void set_state_in_interest_list(Channel* channel, int op) const;
 

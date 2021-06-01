@@ -18,7 +18,7 @@ class EventLoopThreadPool : noncopyable {
   // can be called only within base_loop_.loop.
   void start();
 
-  EventLoop* get_next_loop();
+  EventLoop* next_loop();
 
  private:
   EventLoop* base_loop_;

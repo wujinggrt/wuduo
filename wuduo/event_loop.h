@@ -40,7 +40,7 @@ class EventLoop : noncopyable {
    void assert_in_loop_thread() const;
    void assert_not_in_loop_thread() const;
 
-   static EventLoop* get_event_loop_in_this_thread();
+   static EventLoop* event_loop_in_this_thread();
 
  private:
    void do_pending_tasks();

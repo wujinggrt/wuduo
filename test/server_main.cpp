@@ -22,8 +22,8 @@ void on_message(const TcpConnectionPtr& conn, std::string msg) {
   InetAddress local = InetAddress::local_from(connection_fd);
   InetAddress peer = InetAddress::peer_from(connection_fd);
   std::string echo_msg{"Hello, server"};
-  std::string local_str = std::string{"("} + local.get_ip() + ", " + std::to_string(local.get_port()) + ")";
-  std::string peer_str = std::string{", client("} + peer.get_ip() + ", " + std::to_string(peer.get_port()) + ")";
+  std::string local_str = std::string{"("} + local.ip() + ", " + std::to_string(local.port()) + ")";
+  std::string peer_str = std::string{", client("} + peer.ip() + ", " + std::to_string(peer.port()) + ")";
   echo_msg += local_str + peer_str;
   echo_msg += " - " + msg;
   if (::write(connection_fd, echo_msg.data(), echo_msg.size()) == -1) {
