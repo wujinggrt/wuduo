@@ -123,7 +123,7 @@ std::unique_ptr<Buffer> HttpResponse::analyse(HttpRequest* request) {
     } else if (entity_body_->readable_bytes() < static_cast<size_t>(file_metadata.st_size)) {
       continue;
     } else {
-      assert(entity_body_->readable_bytes() != static_cast<size_t>(file_metadata.st_size));
+      assert(entity_body_->readable_bytes() == static_cast<size_t>(file_metadata.st_size));
       ::close(fd);
       append_status_line_and_headers_to(output.get());
       output->append(entity_body_->peek(), entity_body_->readable_bytes());
