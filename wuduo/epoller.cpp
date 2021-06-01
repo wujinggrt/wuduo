@@ -55,7 +55,7 @@ Epoller::ChannelList Epoller::wait() {
 void Epoller::update_channel(Channel* channel) {
   owner_loop_->assert_in_loop_thread();
   ::epoll_event ee;
-  ee.events = channel->get_events();
+  ee.events = channel->events();
   ee.data.ptr = channel;
   int op = get_ctl_op_from(channel);
   std::string operation{op == EPOLL_CTL_ADD ? "ADD" : op == EPOLL_CTL_MOD ? "MOD" : "DEL"};

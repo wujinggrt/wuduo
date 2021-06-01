@@ -27,7 +27,7 @@ TEST(EventLoopTest, SimpleTimerfdTest) {
       if (num_called == 0) {
         pch->disable_reading();
         std::cout << "quiting loop\n";
-        pch->get_owner_loop()->quit();
+        pch->owner_loop()->quit();
         ::close(fd);
       }
   });
@@ -65,7 +65,7 @@ TEST(EventLoopTest, ConcurrencyRunInLoopTest) {
       ::read(fd, &out, sizeof(out));
       std::cout << "Quit loop\n";
       ::close(fd);
-      pch->get_owner_loop()->quit();
+      pch->owner_loop()->quit();
   });
   ch.enable_reading();
 

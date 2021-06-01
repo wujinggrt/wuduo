@@ -115,7 +115,7 @@ std::shared_ptr<Timer> EventLoop::run_after(std::function<void()> callback, Micr
 }
 
 void EventLoop::update_channel(Channel* channel) {
-  assert(channel->get_owner_loop() == this);
+  assert(channel->owner_loop() == this);
   assert_in_loop_thread();
   epoller_.update_channel(channel);
 }
