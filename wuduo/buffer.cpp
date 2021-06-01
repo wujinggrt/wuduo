@@ -14,7 +14,7 @@ ssize_t Buffer::read_fd(int fd, int* saved_errno) {
   vec[0].iov_len = writable_bytes();
   vec[1].iov_base = extrabuf;
   vec[1].iov_len = sizeof extrabuf;
-  const auto n = ::readv(fd, vec, sizeof vec);
+  const auto n = ::readv(fd, vec, 2);
   if (n < 0) {
     if (saved_errno != nullptr) {
       *saved_errno = errno;
