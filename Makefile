@@ -1,6 +1,6 @@
 CPP = g++
 CPPFLAGS = -I../wuduo -I../ -g -std=c++2a -Wall -Wextra -O0 -fsanitize=address -fno-omit-frame-pointer
- LDFLAGS = -lpthread
+LDFLAGS = -lpthread
 #CPPFLAGS = -DNDEBUG -I../wuduo -I../ -std=c++2a -Wall -Wextra -O3
 # -lpthread should be positioned on last
 # LDFLAGS = -lgtest -lgtest_main -lpthread
