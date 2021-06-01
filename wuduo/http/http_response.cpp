@@ -112,7 +112,7 @@ std::unique_ptr<Buffer> HttpResponse::analyse(HttpRequest* request) {
     LOG_ERROR("failed to fetch file metadata [%s]", request->path().c_str());
     return error_message_with(StatusCode::k404NotFound);
   }
-  LOG_INFO("File size [%ld]", file_metadata.st_size);
+  LOG_INFO("File size [%s:%ld]", request->path().c_str(), file_metadata.st_size);
   // reads until file completed buffered.
   for (;;) {
     auto num_read = entity_body_->read_fd(fd);
