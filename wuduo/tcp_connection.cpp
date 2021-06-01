@@ -85,7 +85,7 @@ void TcpConnection::send(const char* data, size_t count) {
 void TcpConnection::send_in_loop(const char* data, size_t count) {
   loop_->assert_in_loop_thread();
   if (state_ == kDisconnected) {
-    LOG_WARN("disconnected, give up writing");
+    LOG_WARN("sockfd[%d] disconnected, give up writing", channel_.get_fd());
     return ;
   }
   ssize_t num_wrote = 0;
@@ -94,13 +94,13 @@ void TcpConnection::send_in_loop(const char* data, size_t count) {
     num_wrote = ::write(channel_.get_fd(), data, count);
     if (num_wrote >= 0) {
       if (static_cast<size_t>(num_wrote) < count) {
-        LOG_DEBUG("write more data");
+        LOG_DEBUG("sockfd[%d] write more data", channel_.get_fd());
       }
     } else {
       // error, pending contents to buffer.
       num_wrote = 0;
       if ((errno != EWOULDBLOCK) || (errno != EAGAIN)) {
-        LOG_ERROR("unexpected write, [%d:%s]", errno, strerror_thread_local(errno));
+        LOG_ERROR("sockfd[%d] unexpected write, [%d:%s]", channel_.get_fd(), errno, strerror_thread_local(errno));
       }
     }
   }
@@ -132,7 +132,7 @@ void TcpConnection::handle_read() {
   } else if (num_read == -1) {
     // ends here.
     if ((saved_errno != EAGAIN) && (saved_errno != EWOULDBLOCK)) {
-      LOG_ERROR("::read() [%d:%s]", saved_errno, strerror_thread_local(saved_errno));
+      LOG_ERROR("sockfd[%d] ::read() [%d:%s]", fd, saved_errno, strerror_thread_local(saved_errno));
       handle_error();
     }
   }
@@ -153,7 +153,7 @@ void TcpConnection::handle_write() {
       }
     } else {
       int err = errno;
-      LOG_ERROR("::write(sockfd[%d])", channel_.get_fd(), err, strerror_thread_local(err));
+      LOG_ERROR("sockfd[%d] ::write()", channel_.get_fd(), err, strerror_thread_local(err));
     }
   } else {
     LOG_TRACE("sockfd[%d]:No more writing", channel_.get_fd());
@@ -182,7 +182,7 @@ void TcpConnection::handle_close() {
 
 void TcpConnection::handle_error() {
   int err = get_socket_error(channel_.get_fd());
-  LOG_ERROR("handle_error(), SO_ERROR=%d [%s]", err, std::strerror(err));
+  LOG_ERROR("sockfd[%d] handle_error(), SO_ERROR=%d [%s]", channel_.get_fd(), err, std::strerror(err));
   force_close();
 }
 
