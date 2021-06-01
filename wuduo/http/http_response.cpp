@@ -32,6 +32,7 @@ MimeType::MimeType() {
   types_[".png"] = "image/png";
   types_[".txt"] = "text/plain";
   types_[".mp3"] = "audio/mp3";
+  types_[".mp4"] = "video/mp4";
   types_["default"] = std::string{kDefault};
 }
 
@@ -89,31 +90,46 @@ std::unique_ptr<Buffer> HttpResponse::analyse(HttpRequest* request) {
   const auto pos_dot = request->path().find_last_of('.');
   if (pos_dot == std::string::npos) {
     set_content_type(std::string{MimeType::kDefault});
-    LOG_INFO("responsed type[%s]", "html");
+    LOG_INFO("responsed type unrecognized, as default");
   } else {
     set_content_type(
         MimeType::from(request->path().substr(pos_dot)));
     auto mime_type = MimeType::from(request->path().substr(pos_dot));
-    LOG_INFO("responsed type[%s]", mime_type.c_str());
+    LOG_INFO("responsed type[.%.*s:%s]", 
+                                        request->path().size() - pos_dot, 
+                                        request->path().data() + pos_dot, 
+                                        mime_type.c_str());
   }
 
   auto fd = ::open(request->path().c_str(), O_RDONLY | O_CLOEXEC);
-  do {
-    if (fd == -1) {
-      break;
-    }
+  if (fd == -1) {
+    LOG_ERROR("file not found [%s]", request->path().c_str());
+    return error_message_with(StatusCode::k404NotFound);
+  }
+  struct ::stat file_metadata;
+  if (::fstat(fd, &file_metadata) == -1) {
+    ::close(fd);
+    LOG_ERROR("failed to fetch file metadata [%s]", request->path().c_str());
+    return error_message_with(StatusCode::k404NotFound);
+  }
+  LOG_INFO("File size [%ld]", file_metadata.st_size);
+  // reads until file completed buffered.
+  for (;;) {
     auto num_read = entity_body_->read_fd(fd);
     if (num_read < 0) {
-      break;
+      // process error not found.
+      ::close(fd);
+      return error_message_with(StatusCode::k404NotFound);
+    } else if (entity_body_->readable_bytes() < static_cast<size_t>(file_metadata.st_size)) {
+      continue;
+    } else {
+      assert(entity_body_->readable_bytes() != static_cast<size_t>(file_metadata.st_size));
+      ::close(fd);
+      append_status_line_and_headers_to(output.get());
+      output->append(entity_body_->peek(), entity_body_->readable_bytes());
+      return output;
     }
-    ::close(fd);
-    append_status_line_and_headers_to(output.get());
-    output->append(entity_body_->peek(), entity_body_->readable_bytes());
-    return output;
-  } while(false);
-  // process error not found.
-  ::close(fd);
-  return error_message_with(StatusCode::k404NotFound);
+  }
 }
 
 void HttpResponse::append_status_line_and_headers_to(Buffer* output) const {
