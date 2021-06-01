@@ -183,6 +183,7 @@ void TcpConnection::handle_close() {
 void TcpConnection::handle_error() {
   int err = get_socket_error(channel_.get_fd());
   LOG_ERROR("handle_error(), SO_ERROR=%d [%s]", err, std::strerror(err));
+  force_close();
 }
 
 void TcpConnection::force_close() {
