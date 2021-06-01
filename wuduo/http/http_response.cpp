@@ -9,6 +9,7 @@
 #include "wuduo/http/http_response.h"
 #include "wuduo/buffer.h"
 #include "wuduo/log.h"
+#include "wuduo/util.h"
 
 namespace wuduo::http {
 
@@ -115,10 +116,15 @@ std::unique_ptr<Buffer> HttpResponse::analyse(HttpRequest* request) {
   LOG_INFO("File size [%s:%ld]", request->path().c_str(), file_metadata.st_size);
   // reads until file completed buffered.
   for (;;) {
-    auto num_read = entity_body_->read_fd(fd);
+    int saved_errno = 0;
+    auto num_read = entity_body_->read_fd(fd, &saved_errno);
     if (num_read < 0) {
       // process error not found.
-      LOG_ERROR("failed to read [%s:%ld]", request->path().c_str(), entity_body_->readable_bytes());
+      LOG_ERROR("failed to read [%s:%ld], [%d:%s]",
+          request->path().c_str(), 
+          entity_body_->readable_bytes(),
+          saved_errno,
+          strerror_thread_local(saved_errno));
       ::close(fd);
       return error_message_with(StatusCode::k404NotFound);
     } else if (entity_body_->readable_bytes() < static_cast<size_t>(file_metadata.st_size)) {
