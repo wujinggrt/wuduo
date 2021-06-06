@@ -1,7 +1,6 @@
 #pragma once
 
 #include <algorithm>
-#include <vector>
 #include <cstring>
 #include <string_view>
 #include <string>
@@ -17,7 +16,7 @@ class Buffer {
   static constexpr const char cr_lf[] = "\r\n";
 
   explicit Buffer(size_t initial_size = kInitialSize)
-    : buffer_(kCheapPrepend + initial_size),
+    : buffer_(kCheapPrepend + initial_size, '\0'),
     reader_index_{kCheapPrepend},
     writer_index_{kCheapPrepend}
   {
@@ -82,7 +81,7 @@ class Buffer {
     has_written(count);
   }
 
-  char* begin_write() { return buffer_.data() + writer_index_; }
+  char* begin_write() { return &buffer_.front() + writer_index_; }
   const char* begin_write() const { return buffer_.data() + writer_index_; }
 
   void has_written(size_t count) {
@@ -124,12 +123,12 @@ class Buffer {
     const size_t readable = readable_bytes();
     std::copy(buffer_.data() + reader_index_, 
               buffer_.data() + reader_index_ + readable,
-              buffer_.data() + kCheapPrepend);
+              &buffer_.front() + kCheapPrepend);
     reader_index_ = kCheapPrepend;
     writer_index_ = kCheapPrepend + readable;
   }
 
-  std::vector<char> buffer_;
+  std::string buffer_;
   size_t reader_index_;
   size_t writer_index_;
 };
