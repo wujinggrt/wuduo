@@ -129,8 +129,8 @@ class Buffer {
   }
 
   std::string buffer_;
-  size_t reader_index_;
-  size_t writer_index_;
+  std::string::size_type reader_index_;
+  std::string::size_type writer_index_;
 };
 
 }
